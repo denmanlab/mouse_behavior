@@ -63,7 +63,9 @@ grating_images = {'100': pyglet.resource.image('grating_100.jpg'),
                   '64': pyglet.resource.image('grating_64.jpg'),
                   '32': pyglet.resource.image('grating_32.jpg'),
                   '16': pyglet.resource.image('grating_16.jpg'),
-                  '8' : pyglet.resource.image('grating_8.jpg')}
+                  '8' : pyglet.resource.image('grating_8.jpg'),
+                  '4' : pyglet.resource.image('grating_4.jpg'),
+                  '2' : pyglet.resource.image('grating_4.jpg'),}
 sprite = pyglet.sprite.Sprite(grating_image, x = 600, y = 800)
 sprite.scale = 0.8
 
@@ -111,6 +113,7 @@ class Params():
             self.yesterday = json.loads(json.load(open(os.path.join(os.path.dirname(self.directory),self.yesterday_directory,'params.json'),'rb')))
             self.shaping_wait_time = self.yesterday['shaping_wait_time']
             self.SHAPING = self.yesterday['SHAPING']
+
             self.WAIT_TIME_WINDOW = self.yesterday['WAIT_TIME_WINDOW']
             print('using parameters from yesterday: '+str(self.yesterday_directory)+'  wait_time: '+str(self.shaping_wait_time)+'  SHAPING: '+str(self.SHAPING))
         except:
@@ -119,7 +122,7 @@ class Params():
         self.shaping_amount = 10
         self.shaping_wait_times = [self.shaping_wait_time]
 
-        self.stim_duration = 3. # the max time the stim can be on the screen before a lapse
+        self.stim_duration = 1.5 # the max time the stim can be on the screen before a lapse
 
         self.spout_postion = 'high'
         self.center_button, self.button_1, self.button_2 = 0,0,0
@@ -357,13 +360,21 @@ def on_draw():
                     else:
                        if check_lick_response(params.stim_on_time[-1]):
                             print('lick detected after stim on')
-                            reward = 45 #int(10 + 5 * params.stim_delay[-1])
-                            task_io.s.rotate(reward,'dispense')
-                            params.stim_rewarded.append(True);params.stim_reward_amount.append(reward)
-                            params.reward_time.append(timer.time)
-                            params.stim_off_time.append(timer.time)
-                            params.falsealarm.append(False);params.lapse.append(False)
-                            end_trial()
+                            if params.stim_contrast != 0:
+                                reward = 35 #int(10 + 5 * params.stim_delay[-1])
+                                task_io.s.rotate(reward,'dispense')
+                                params.stim_rewarded.append(True);params.stim_reward_amount.append(reward)
+                                params.reward_time.append(timer.time)
+                                params.stim_off_time.append(timer.time)
+                                params.falsealarm.append(False);params.lapse.append(False)
+                                end_trial()
+                            else:
+                                params.stim_rewarded.append(False);params.stim_reward_amount.append(-1)
+                                params.reward_time.append(-1)
+                                params.stim_off_time.append(timer.time)
+                                params.falsealarm.append(True);params.lapse.append(False)
+                                end_trial()
+
                     
         if params.stim_on:
             params.sprite.draw()
@@ -479,7 +490,7 @@ def setup_trial():
         #     if next_delay < 1.0: 1.1
         #     params.stim_delay.append(next_delay) 
         # else: params.stim_delay.append(1.5) 
-        params.stim_delay.append(random.random() * params.WAIT_TIME_WINDOW + 2.5)
+        params.stim_delay.append(random.random() * params.WAIT_TIME_WINDOW+1)
     print('required wait with no licking is '+str(params.stim_delay[-1])+' and should come on at '+str(params.trial_start_time[-1] + params.stim_delay[-1]))
 
     contrasts = list(grating_images.keys())
@@ -507,7 +518,7 @@ def setup_trial():
 
     params.this_trial_has_been_rewarded = False
     params.new_trial_setup=True
-    params.iti = random.random() * 2. + 1.
+    params.iti = random.random() * 2. + 2.
     params.stim_on=False
 
 def start_trial():
@@ -887,7 +898,7 @@ task_io=ArduinoController(board_port) # use the default pins as set up by the cl
 # task_io.move_spout(90)
 
 #set up parameters
-params = Params(mouse = 'C104')
+params = Params(mouse = 'jlh47')
 task_io.move_spout(90);params.spout_positions.append(270);params.spout_timestamps.append(timer.time)
 
 #start the game loop

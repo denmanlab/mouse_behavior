@@ -21,24 +21,6 @@ from playsound import playsound
 BEEP_PATH = './models/beep-07a.mp3'
 ERROR_BEEP_PATH = './models/beep-03.mp3'
 
-# import pyaudio  
-# import wave  
-# BEEP = wave.open('beep-07a.wav',"rb")  
-# #instantiate PyAudio  
-# p = pyaudio.PyAudio()  
-# #open stream  
-# stream = p.open(format = p.get_format_from_width(BEEP.getsampwidth()),  
-#                 channels = BEEP.getnchannels(),  
-#                 rate = BEEP.getframerate(),  
-#                 output = True)  
-# #read data  
-# data = BEEP.readframes(chunk)  
-# chunk=1024
-
-# camera_window = pyglet.window.Window(532, 384)
-# camera_window.set_location(400,100)
-# camera_window.set_vsync(False)
-
 task_monitor = pyglet.window.Window(216, 192)
 task_monitor.set_location(932,100)
 task_monitor.set_vsync(False)
@@ -87,7 +69,11 @@ class Params():
         self.SHOW_CAMERA = False
         self.SHAPING = True
         self.PLAY_TRIAL_SOUND = True
-        self.WAIT_TIME_WINDOW = 2.5
+        self.paused = False
+        self.manual_stim_reward_start = 0
+        self.manual_stim_reward = False
+        self.manual_reward_bool = False
+        self.WAIT_TIME_WINDOW = 1.5 #2.5
         self.TRIALS_COMPLETED = 0
 
         self.progress_image = pyglet.resource.image('progress_tmp.png')
@@ -95,7 +81,6 @@ class Params():
         self.sprite_progress = pyglet.sprite.Sprite(self.progress_image, x = 310, y = 0)
         #check the data from the previous day and start the animal where it ended yesterday
         try:
-            #TODO: read yesterday's json for the last shaping time
             sessions = os.listdir(os.path.dirname(self.directory)) 
             sessions.sort()
             self.yesterday_directory = sessions[-2]
@@ -201,7 +186,7 @@ class Params():
         #this would allow for return to shaping if the animal is failing in detection mode
         # else:
         # if self.df.tail(10).falsealarm.sum() > 7.9:
-        #     if self.df.shape[0] % 3 == 0:
+        #     if self.df.shape[0] % 3 == 0:r
         #         if params.shaping_wait_time > 1.2:
         #                 if  params.shaping_wait_time < 5. :
         #                     if params.shaping_wait_time > 2.5:
@@ -283,6 +268,10 @@ timer.start()
 @game_window.event      
 def on_draw():   
     game_window.clear()     # clear the window
+    
+    #checks for manual stim
+    if params.manual_stim_reward == True:
+        manual_stim_reward(params.manual_stim_reward_start)
 
     if not params.new_trial_setup: #check to see if we need to update params for a new trial. this only happens if the previous trial ended, and the animal hasn't licked for some amount of time that is currently hardcoded below. if not, execute the current trial. 
         if params.stim_on:    sprite.draw()
@@ -332,6 +321,7 @@ def on_draw():
                                 params.shaping_amount = int(params.shaping_wait_time * 10 * 0.75 )#SCALE FOR LONGER WAIT TIMES
                                 if params.shaping_amount > 26: params.shaping_amount = 25
                                 task_io.s.rotate(params.shaping_amount,'dispense')
+                                print('spaping on: reward')
                                 params.stim_rewarded.append(True);params.falsealarm.append(False);params.lapse.append(False)
                                 params.stim_reward_amount.append(params.shaping_amount)
                                 params.reward_time.append(timer.time)
@@ -346,6 +336,7 @@ def on_draw():
                             print('lick detected after stim on')
                             reward = 45 #int(10 + 5 * params.stim_delay[-1])
                             task_io.s.rotate(reward,'dispense')
+                            print('shaping off: reward')
                             params.stim_rewarded.append(True);params.stim_reward_amount.append(reward)
                             params.reward_time.append(timer.time)
                             params.stim_off_time.append(timer.time)
@@ -370,20 +361,20 @@ def on_draw():
                     params.reward_time.append(-1)
                 end_trial()
 
-                # if params.AUTOREWARD:
-                #     print('giving reward at end of ')
-                #     task_io.s.rotate(20,'dispense');
-                #     params.stim_rewarded.append(True);params.stim_reward_amount.append(20)
-                #     params.reward_time.append(timer.time)
-                #     params.falsealarm.append(False);params.lapse.append(False)
-                # else:
-                #     if not params.ONSET_REWARD:
-                #         params.stim_rewarded.append(False);params.stim_reward_amount.append(-1)
-                #     params.reward_time.append(-1)
-                #     params.falsealarm.append(False);params.lapse.append(True)
+                if params.AUTOREWARD:
+                    print('giving reward at end of ')
+                    task_io.s.rotate(20,'dispense')
+                    params.stim_rewarded.append(True);params.stim_reward_amount.append(20)
+                    params.reward_time.append(timer.time)
+                    params.falsealarm.append(False);params.lapse.append(False)
+                else:
+                    if not params.ONSET_REWARD:
+                        params.stim_rewarded.append(False);params.stim_reward_amount.append(-1)
+                    params.reward_time.append(-1)
+                    params.falsealarm.append(False);params.lapse.append(True)
 
-                # params.stim_off_time.append(timer.time)
-                # end_trial()
+                params.stim_off_time.append(timer.time)
+                end_trial()
 
         # else:
         #     if params.stim_on: 
@@ -437,78 +428,80 @@ def on_draw():
 
 #functions used by the @game_window.event on_draw() to execute the task==================
 def setup_trial():
-    params.trial_start_time.append(timer.time)
-    print(sprite)
-    if random.random() > 0.5: params.answer = 'left'
-    else:                     params.answer = 'right'
+    if params.paused == False:
+        params.trial_start_time.append(timer.time)
+        print(sprite)
+        if random.random() > 0.5: params.answer = 'left'
+        else:                     params.answer = 'right'
 
-    if params.answer == 'left': 
-        sprite.rotation = 90
-        params.stim_orientation.append(0)
-        #TODO: need to set the x and y along with ori because origin is not in the center
-    else:                       
-        sprite.rotation = 90
-        params.stim_orientation.append(90)
+        if params.answer == 'left': 
+            sprite.rotation = 90
+            params.stim_orientation.append(0)
+            #TODO: need to set the x and y along with ori because origin is not in the center
+        else:                       
+            sprite.rotation = 90
+            params.stim_orientation.append(90)
 
-    params.stim_spatial_frequency.append(0.08)
+        params.stim_spatial_frequency.append(0.08)
 
-    # params.trial_start_time.append(timer.time)
+        # params.trial_start_time.append(timer.time)
 
-    if params.SHAPING:
-        params.stim_delay.append(params.shaping_wait_time) 
-    else:
-        #TODO: implement distribution here
-        # as it is, random flat distro to 5 seconds   
-        # if len(params.stim_delay) > 0:
-        #     adjuster = random.random() * 0.5 * params.stim_rewarded[-1] 
-        #     next_delay = params.stim_delay[-1] +  adjuster
-        #     if next_delay > 5.0: random.random() * 5. + 1
-        #     if next_delay < 1.0: 1.1
-        #     params.stim_delay.append(next_delay) 
-        # else: params.stim_delay.append(1.5) 
-        params.stim_delay.append(random.random() * params.WAIT_TIME_WINDOW + 2.5)
-    print('required wait with no licking is '+str(params.stim_delay[-1])+' and should come on at '+str(params.trial_start_time[-1] + params.stim_delay[-1]))
+        if params.SHAPING:
+            params.stim_delay.append(params.shaping_wait_time) 
+        else:
+            #TODO: implement distribution here
+            # as it is, random flat distro to 5 seconds   
+            # if len(params.stim_delay) > 0:
+            #     adjuster = random.random() * 0.5 * params.stim_rewarded[-1] 
+            #     next_delay = params.stim_delay[-1] +  adjuster
+            #     if next_delay > 5.0: random.random() * 5. + 1
+            #     if next_delay < 1.0: 1.1
+            #     params.stim_delay.append(next_delay) 
+            # else: params.stim_delay.append(1.5) 
+            params.stim_delay.append(random.random() * params.WAIT_TIME_WINDOW + 1.5)#2.5)
+        print('required wait with no licking is '+str(params.stim_delay[-1])+' and should come on at '+str(params.trial_start_time[-1] + params.stim_delay[-1]))
 
-    contrasts = [0,0.05,0.1,0.2,0.4,0.8,1.0]
-    contrast = contrasts[random.randint(7)]
-    if contrast == 0: params.catch=True
-    else: 
-        params.catch=False
-        #TODO: set sprite image manually based on contrast
-        #sprite = pyglet.sprite.Sprite(grating_image, x = 300, y = 300)
-        #sprint.set_scale(0.2)
-    params.stim_contrast.append(contrast)
-    # sprite.color = (int(255*contrast),int(255*contrast),int(255*contrast)) #don't do this anymore it doesn't work
+        contrasts = [0,0.05,0.1,0.2,0.4,0.8,1.0]
+        contrast = contrasts[random.randint(7)]
+        if contrast == 0: params.catch=True
+        else: 
+            params.catch=False
+            #TODO: set sprite image manually based on contrast
+            #sprite = pyglet.sprite.Sprite(grating_image, x = 300, y = 300)
+            #sprint.set_scale(0.2)
+        params.stim_contrast.append(contrast)
+        # sprite.color = (int(255*contrast),int(255*contrast),int(255*contrast)) #don't do this anymore it doesn't work
 
-    
-    # params.stim_on_time.append(params.trial_start_time[-1] + params.stim_delay[-1])
-    
-    params.trial_AUTOREWARDED.append(params.AUTOREWARD)
-    params.trial_ONSET_REWARD.append(params.ONSET_REWARD)
-    params.shaping.append(params.SHAPING)
+        
+        # params.stim_on_time.append(params.trial_start_time[-1] + params.stim_delay[-1])
+        
+        params.trial_AUTOREWARDED.append(params.AUTOREWARD)
+        params.trial_ONSET_REWARD.append(params.ONSET_REWARD)
+        params.shaping.append(params.SHAPING)
 
-    params.this_trial_has_been_rewarded = False
-    params.new_trial_setup=True
-    params.iti = random.random() * 2. + 1.
-    params.stim_on=False
+        params.this_trial_has_been_rewarded = False
+        params.new_trial_setup=True
+        params.iti = random.random() * 2. + 1.
+        params.stim_on=False
 
 def start_trial():
-    print('start of trial at '+str(timer.time))
-    trial_start = timer.time
-    params.in_trial = True
-    try:
-        if params.PLAY_TRIAL_SOUND:
-            playsound(BEEP_PATH)
-        if params.spout_postion == 'low':
-            if not params.SPOUT_LOCK:
-                task_io.move_spout(90);params.spout_positions.append(90);params.spout_timestamps.append(timer.time)
-                # time.sleep(0.6)
-        # music.play()
+    if params.paused == False:
+        print('start of trial at '+str(timer.time))
+        trial_start = timer.time
+        params.in_trial = True
+        try:
+            if params.PLAY_TRIAL_SOUND:
+                playsound(BEEP_PATH)
+            if params.spout_postion == 'low':
+                if not params.SPOUT_LOCK:
+                    task_io.move_spout(90);params.spout_positions.append(90);params.spout_timestamps.append(timer.time)
+                    # time.sleep(0.6)
+            # music.play()
 
-        # while data:  
-        #     stream.write(data)  
-        #     data = BEEP.readframes(chunk)  
-    except: print('failed to play trial start audio cue at '+str(timer.time))
+            # while data:  
+            #     stream.write(data)  
+            #     data = BEEP.readframes(chunk)  
+        except: print('failed to play trial start audio cue at '+str(timer.time))
 
 def end_trial():
     print('end of trial at '+str(timer.time))
@@ -544,7 +537,6 @@ def check_response():
         return True
     else: return False
 
-#TODO check the recent history to see if there has been a lick since the stimulus turned on
 #returns True or False
 def check_lick_response(reference_time):
     if np.array(params.lick_timestamps).shape[0] > 0:
@@ -554,6 +546,20 @@ def check_lick_response(reference_time):
         else:
             return False
     else: return False
+def manual_stim_reward(reference_time):
+    if reference_time + 5 > timer.time:
+        params.stim_on = True
+        sprite.draw()
+        if params.manual_reward_bool == False:
+            task_io.s.rotate(20,'dispense')
+            print('Manual Stim on and Water delivered')
+            params.manual_reward_bool = True
+    else: 
+        params.stim_on = False
+        params.manual_stim_reward = False
+        print('Manual Trial Over')
+
+    
 
 #TODO calculate the reaction time, even if this was a false alarm. use check lick response, or at least use the relative timing of lick_stimstamps and trial start
 def check_reaction_time(reaction_time):
@@ -625,6 +631,30 @@ def on_key_press(symbol, modifiers):
     if symbol == pyglet.window.key.D:
         print('d: dispense')
         task_io.s.rotate(20,'dispense')
+    
+    
+    if symbol == pyglet.window.key.SPACE:
+        ##  pause condition -- trials will not be setup or start if paused.
+        if params.paused == False:
+            params.paused = True
+            params.stim_on = False
+            params.stim_rewarded.append(False)
+            end_trial()
+            print('pressed SPACE: trials pausing')
+        elif params.paused == True:
+            params.paused = False
+            print('pressed SPACE: trials resuming')
+
+        
+    if symbol == pyglet.window.key.M: # manually display stim, automatically deliver fixed reward
+        print('Manual stim and reward initiated')
+        params.manual_stim_reward_start = timer.time 
+        params.manual_stim_reward = True
+        params.manual_reward_bool = False
+
+
+
+    
     if symbol == pyglet.window.key.K:
         print(task_io.board.digital[task_io.lick_opto_pin].read())
     if symbol == pyglet.window.key.C:
@@ -869,7 +899,7 @@ task_io=ArduinoController(board_port) # use the default pins as set up by the cl
 # task_io.move_spout(90)
 
 #set up parameters
-params = Params(mouse = 'C104')
+params = Params(mouse = 'c104')
 task_io.move_spout(90);params.spout_positions.append(270);params.spout_timestamps.append(timer.time)
 
 #start the game loop
@@ -880,16 +910,6 @@ pyglet.clock.schedule_interval(read_licks,1/1000.)
 #FYI the on_draw() functions above run at frame rate, so should be 60Hz. might be 30? maybe the card can't keep up with the big monitors?
 pyglet.app.run()
     
-
-
-
-
-
-
-
-
-
-
 
 
 
