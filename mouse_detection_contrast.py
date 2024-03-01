@@ -329,7 +329,7 @@ def on_draw():
                             # time.sleep(2.0)
 
                         #this is a code block for a timeout if there have been a bunch of FAs
-                            # if params.FA_count > params.FA_max_count:
+                            #if params.FA_count > params.FA_max_count:
                             #     params.FA_count = 0
                             #     task_io.move_spout(270); params.spout_positions.append(270);params.spout_timestamps.append(timer.time)
                             #     time.sleep(11.)
@@ -360,15 +360,17 @@ def on_draw():
                     else:
                        if check_lick_response(params.stim_on_time[-1]):
                             print('lick detected after stim on')
-                            if params.stim_contrast != 0:
-                                reward = 35 #int(10 + 5 * params.stim_delay[-1])
+                            if params.stim_contrast[-1] != 0:
+                                reward = 100 #int(10 + 5 * params.stim_delay[-1])
                                 task_io.s.rotate(reward,'dispense')
+                                print('Reward!')
                                 params.stim_rewarded.append(True);params.stim_reward_amount.append(reward)
                                 params.reward_time.append(timer.time)
                                 params.stim_off_time.append(timer.time)
                                 params.falsealarm.append(False);params.lapse.append(False)
                                 end_trial()
                             else:
+                                print('Contrast was zero and this if statement worked')
                                 params.stim_rewarded.append(False);params.stim_reward_amount.append(-1)
                                 params.reward_time.append(-1)
                                 params.stim_off_time.append(timer.time)
@@ -494,7 +496,8 @@ def setup_trial():
     print('required wait with no licking is '+str(params.stim_delay[-1])+' and should come on at '+str(params.trial_start_time[-1] + params.stim_delay[-1]))
 
     contrasts = list(grating_images.keys())
-    contrasts.append('0')
+    for _ in range(1):
+        contrasts.append('0') # increase the liklihood of a 0 contrast
     contrast = contrasts[random.randint(len(contrasts))]
     if contrast == '0': 
         params.catch=True
@@ -518,7 +521,7 @@ def setup_trial():
 
     params.this_trial_has_been_rewarded = False
     params.new_trial_setup=True
-    params.iti = random.random() * 2. + 2.
+    params.iti = random.uniform(3,15)
     params.stim_on=False
 
 def start_trial():
