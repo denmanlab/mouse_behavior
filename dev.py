@@ -1,137 +1,74 @@
 
 from imgui.integrations.pyglet import create_renderer
 import pyglet
-from random import randint, choice
+pyglet.resource.path = ['./models']
+pyglet.resource.reindex()
 from pyglet.clock import schedule_once, unschedule
 import imgui
+
+from random import randint, choice
+
+
 import pandas as pd
 import datetime, os, glob
+
+# import custom classes
+from arduino_controller import ArduinoController
+from custom_timer import Timer
+from params import Params
+from stimuli import Stimuli
+from plotter import Plotter
+
 '''
 TODO:
  - Implement real licking
- - Actual stimuli and orientations
  - hardware interfacing
     - lickometer logic to read actual
     - spout control
-    - stimulus control --
+    - cameras
+    - electrical stimulus control --
         - i think i need to save out several ASCII files. 
         - then stimulate across.
  - timeout logic for excessive False Alarms
  - 
 
 '''
-
-class Params:
-    def __init__(self, mouse = 'test'):
-        self.mouse = mouse
-        self.setup_directories()
-        self.init_task_variables()
-        #camera
-        #load previous params
-
-    def setup_directories(self):
-        ''' setup base and specific session directories.'''
-        self.basepath = r'C:\data\behavior'
-        self.directory = os.path.join(self.basepath, str(self.mouse))
-        #os.makedirs(self.directory, exist_ok = True
-
-    def init_task_variables(self): 
-        #trial variables
-        self.stimuli = ['red', 'blue'] #ToDO: replace this with real stimuli! 
-        self.trial_running = False 
-        self.stimulus_visible = False
-        self.stim_on_time = None
-        self.lick_detected_during_trial = False
-        self.trial_outcome = None
-        self.last_lick_time = None # last lick time -- used to check quiet period
-        self.lick_times = [] # list for full lick times 
-        self.current_stim = None
-        self.batch = pyglet.graphics.Batch()
-        self.stimulus_rect = pyglet.shapes.Rectangle(x=350, y=250, width=100, height=100, color=(255, 255, 255), batch=self.batch)
-        
-        #to be able to modulate
-        self.reward_vol = 50
-        self.min_wait_time = 1
-        self.max_wait_time = 5
-        self.wait_time = None
-        self.quiet_period = 2 #time required of no licking between trials
-        self.stim_duration = 5
-        
-        self.autoreward = False
-        self.shaping = False
-
-        #buttons = [self.shaping, self.autoreward] #toggles
-    
-        #dataframe to be saved
-        self.trials_df = pd.DataFrame(columns=['trial_number', 
-                                                'stimulus', 
-                                                'outcome',
-                                                'false_alarm',
-                                                'rewarded',
-                                                'lapse',
-                                                'stimulus_visible', 
-                                                'lick_detected', 
-                                                'trial_start_time', 
-                                                'last_lick_time'])
-    def update_df(self): # called after every trial to update the DF
-        self.false_alarm = self.trial_outcome == 'False Alarm'
-        self.rewarded = self.trial_outcome == 'Reward'
-        self.lapse = self.trial_outcome == 'Lapse'
-
-        new_index = len(params.trials_df)
-        # Add a new row at the end of the DataFrame
-        self.trials_df.loc[new_index] = {
-            'trial_number': new_index + 1,
-            'stimulus': self.current_stim,
-            'outcome': self.trial_outcome,
-            'false_alarm': self.false_alarm,
-            'rewarded': self.rewarded,
-            'lapse': self.lapse,
-            'Stimulus Visible': self.stimulus_visible,
-            'Lick Detected': self.lick_detected_during_trial,
-            'Trial Start Time': self.stim_on_time,
-            'Last Lick Time': self.last_lick_time,
-            'Autoreward': self.autoreward
-        }
-        #self.trials_df.to_csv(self.path)
-        
-        # plotting! 
-            # create figure
-            # subplot 1: Rolling proportion
-            # subblot 2: cumulutive counts
-            # subplot 3: seconds x wait_time scatter (color coded)
-            # subplot 4: stimuli x waittime (color coded)
-            # subplot 5: "Success": True Lapses + Rewarded
-
-class Timer:
-    def __init__(self):
-        self.reset()
-    def reset(self):
-        self.time = 0
-        self.running = False
-    def start(self):
-        self.running = True
-    def update(self, dt):
-        if self.running:
-            self.time += dt 
-
 # Default settings (now part of Params)
 params = Params(mouse = 'Test')
+
+plotter = Plotter(params) # plotting functions and tools for performance window
+
+stimuli = Stimuli(params) #keeps track of stimuli settings and sprites. 
+
 timer = Timer()
 timer.start()
 
+#set up arduino
+board_port = 'COM4'
+#task_io = ArduinoController(board_port)
+
 #Windows! 
 #main window
-window = pyglet.window.Window(width=600, height=600, caption="Experiment Window")
-window.set_location(500, 200) # change this for rig setup
+window = pyglet.window.Window(width=2160, height=1920, caption="Experiment Window")
+window.set_location(-2160, 0) # change this for rig setup
+window.set_vsync(False)
 #settings
 imgui.create_context() # Initialize ImGui context
 settings_window = pyglet.window.Window(width = 500, height = 216, caption = "Settings")
 settings_window.set_location(0,50)
+settings_window.set_vsync(False)
 imgui_renderer = create_renderer(settings_window)
 
-# plotting performance window
+#monitor stimuli
+monitor_window = pyglet.window.Window(width = 400, height = 400, caption = "Monitor")
+monitor_window.set_location(0, 400)
+monitor_window.set_vsync(False)
 
+# plotting performance window
+task_monitor_plot = pyglet.window.Window(600, 600)
+task_monitor_plot.set_location(1148,100)
+task_monitor_plot.set_vsync(False)
+pyglet.gl.glClearColor(0.5,0.5,0.5,1)
 
 
 ####Hardware!
@@ -146,7 +83,14 @@ def on_draw():
     window.clear()
     # Draw stimulus if visible
     if params.stimulus_visible:
-        params.stimulus_rect.draw()
+       stimuli.sprite.draw()
+
+@monitor_window.event
+def on_draw():
+    window.clear()
+    # Draw stimulus if visible
+    if params.stimulus_visible:
+       stimuli.sprite2.draw()
 
 @settings_window.event
 def on_draw():
@@ -214,6 +158,12 @@ def on_close():
 def on_close():
     pass
 
+@task_monitor_plot.event
+def on_draw():
+    task_monitor_plot.clear()
+    plotter.sprite_progress.scale = 0.8
+    plotter.sprite_progress.draw()
+
 @window.event
 def on_key_press(symbol, modifiers):
     if symbol == pyglet.window.key.SPACE:
@@ -234,13 +184,15 @@ def setup_trial(params):
     
     current_time = pyglet.clock.get_default().time()
     if params.last_lick_time is None or (current_time - params.last_lick_time) >= params.quiet_period:
-        params.current_stim = choice(params.stimuli)
+        select_stimuli(params, stimuli, catch_frequency = params.catch_frequency)
         params.wait_time = randint(params.min_wait_time, params.max_wait_time)
         params.trial_running = True
         params.stimulus_visible = False
         params.lick_detected_during_trial = False
         params.trial_outcome = None  # Reset trial outcome
-        print(f"Trial starting now with {params.current_stim}, wait time is {params.wait_time} seconds.")
+        
+        params.trial_start_time = timer.time
+        print(f"Trial Started, wait time is {params.wait_time} seconds.")
         
         # Unschedule to avoid overlaps
         unschedule(start_trial)
@@ -253,13 +205,9 @@ def setup_trial(params):
         schedule_once(lambda dt: setup_trial(params), 0.5)
 
 def start_trial(dt, params):
-    if params.current_stim == 'red':
-        params.stimulus_rect.color = (255, 0, 0)
-    else:
-        params.stimulus_rect.color = (0, 0, 255)
     params.stimulus_visible = True
     params.stim_on_time = timer.time #pyglet.clock.get_default().time()
-    print(f"Stimulus {params.current_stim} on")
+    print(f"Stimulus Contrast {params.stim_contrast} on")
     if params.autoreward: 
         deliver_reward()
     schedule_once(end_trial, params.stim_duration, params)
@@ -272,9 +220,14 @@ def process_lick(params): #processes lick events detected by read_lickometer for
             unschedule(end_trial)
             schedule_once(end_trial,0,params)   
         elif params.stimulus_visible and params.trial_outcome == None:
-            params.trial_outcome = "Reward"
-            #dispense(params.reward_vol)
-            print("Reward: Lick detected after stimulus.")
+            if params.catch: # that is stim contrast is off 
+                params.trial_outcome = "False Alarm"
+                print("Catch: Lick detected after 0 Contrast.")
+            else:
+                params.rewarded_lick_time = timer.time
+                params.trial_outcome = "Reward"
+                #dispense(params.reward_vol)
+                print("Reward: Lick detected after stimulus.")
         params.lick_detected_during_trial = True
 
 def end_trial(dt, params):
@@ -291,6 +244,7 @@ def end_trial(dt, params):
     
     # Update and save DF
     params.update_df()
+    plotter.update_plots(params.trials_df)
     
     #schedule setup trial once mouse stops licking (quiet period)
     unschedule(start_trial) #just for safety
@@ -307,6 +261,50 @@ def read_lickometer(dt):
         params.last_lick_time = current_time
         print(f'Lick at {current_time}')
         process_lick(params)
+
+def select_stimuli(Params, Stimuli, catch_frequency = 1): 
+    '''
+    this randomly selects which stimuli to show based on stimuli present in stimuli class
+    TODO: add logic for choosing electrical stim
+    Inputs: instance of params and stimuli
+    catch_frequency changes how likely a null trial is.. int: the actual number of zero contrasts added to selection pool
+    '''
+    ## select a contrast
+    contrasts = list(Stimuli.grating_images.keys())
+    for _ in range(catch_frequency):
+        contrasts.append('0')
+    
+    contrast = choice(contrasts)
+
+    if contrast == '0':
+        Params.catch = True
+        Stimuli.sprite = pyglet.sprite.Sprite(Stimuli.blank_image, x = 1000, y = 450)
+        Stimuli.sprite.scale = 4.8
+    else: 
+        Params.catch=False
+        Stimuli.grating_image = Stimuli.grating_images[contrast]
+        Stimuli.grating_image.anchor_x = Stimuli.grating_image.width // 2 #center image
+        Stimuli.sprite = pyglet.sprite.Sprite(Stimuli.grating_image, x = 1000, y = 450)
+        Stimuli.sprite.scale = 4.8
+        
+        Stimuli.sprite2 = pyglet.sprite.Sprite(Stimuli.grating_image, x = 200, y = 400)
+        # Set the anchor point to the center of sprite2 for true centering
+        Stimuli.sprite2.x = monitor_window.width // 2
+        Stimuli.sprite2.y = monitor_window.height // 2
+        Stimuli.sprite2.scale = 0.5
+        Stimuli.sprite2.anchor_x = Stimuli.sprite2.width // 2
+        Stimuli.sprite2.anchor_y = Stimuli.sprite2.height // 2
+
+    Params.stim_contrast = int(contrast)
+
+    ## select an orientation... ignoring for now
+    # if random.random() > 0.5: 
+    #     Params.stim_orientation = '0'
+    #     Stimuli.sprite.rotation = 0
+    # else:                     
+    #     params.stim_orientation = '90'
+    #     Stimuli.sprite.rotation = 90
+    #params.stim_spatial_frequency.append(0.08) # what the heck is this, it doesn't do anything?
 
 def deliver_reward():
     pass 
