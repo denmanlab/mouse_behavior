@@ -45,7 +45,7 @@ timer.start()
 
 #set up arduino
 board_port = 'COM4'
-#task_io = ArduinoController(board_port)
+task_io = None #ArduinoController(board_port)
 
 #Windows! 
 #main window
@@ -65,8 +65,8 @@ monitor_window.set_location(0, 400)
 monitor_window.set_vsync(False)
 
 # plotting performance window
-task_monitor_plot = pyglet.window.Window(600, 600)
-task_monitor_plot.set_location(1148,100)
+task_monitor_plot = pyglet.window.Window(1000, 800)
+task_monitor_plot.set_location(1100,100)
 task_monitor_plot.set_vsync(False)
 pyglet.gl.glClearColor(0.5,0.5,0.5,1)
 
@@ -176,7 +176,7 @@ def on_key_press(symbol, modifiers):
     elif symbol == pyglet.window.key.ESCAPE:
         pyglet.app.exit()
     elif symbol == pyglet.window.key.D:
-        deliver_reward()
+        deliver_reward(params, task_io)
 
 def setup_trial(params):
     if params.trial_running:  # Check if a trial is already running
@@ -216,23 +216,26 @@ def process_lick(params): #processes lick events detected by read_lickometer for
     if params.trial_running:
         if not params.stimulus_visible and params.trial_outcome == None: # stim off and no trial outcome
             params.trial_outcome = "False Alarm"
+            params.rewarded_lick_time = None 
             print("False Alarm (FA): Lick detected before stimulus.")
             unschedule(end_trial)
             schedule_once(end_trial,0,params)   
         elif params.stimulus_visible and params.trial_outcome == None:
             if params.catch: # that is stim contrast is off 
                 params.trial_outcome = "False Alarm"
+                params.rewarded_lick_time = timer.time # rewarded_lick_time is bad variable name for this but its fine. i don't want to create new variable
                 print("Catch: Lick detected after 0 Contrast.")
             else:
                 params.rewarded_lick_time = timer.time
                 params.trial_outcome = "Reward"
-                #dispense(params.reward_vol)
+                deliver_reward(params, task_io)
                 print("Reward: Lick detected after stimulus.")
         params.lick_detected_during_trial = True
 
 def end_trial(dt, params):
     if not params.lick_detected_during_trial:
         params.trial_outcome = "Lapse"
+        params.rewarded_lick_time = None
         print("Lapse: No lick detected during the trial.")
     else:
         print(f"Trial outcome: {params.trial_outcome}")
@@ -245,11 +248,18 @@ def end_trial(dt, params):
     # Update and save DF
     params.update_df()
     plotter.update_plots(params.trials_df)
-    
-    #schedule setup trial once mouse stops licking (quiet period)
-    unschedule(start_trial) #just for safety
-    unschedule(end_trial) # just for safety
-    schedule_once(lambda dt: setup_trial(params), params.quiet_period)
+
+    # check if mouse needs a timeout!!! i.e., FA streak greater than FA penalty threshold
+    if params.FA_penalty_check():
+        print(f"FA streak of {params.FA_streak} greater than FA penalty of {params.FA_penalty}. Timeout!")
+        unschedule(setup_trial)
+        move_spout(params, task_io) # move spout down/unlickable
+        schedule_once(lambda dt: move_spout(params, task_io), params.timeout_duration) #move spout up/lickable after timeout
+        schedule_once(lambda dt: setup_trial(params), params.timeout_duration)
+    else:   #schedule setup trial once mouse stops licking (quiet period)
+        unschedule(start_trial) #just for safety
+        unschedule(end_trial) # just for safety
+        schedule_once(lambda dt: setup_trial(params), params.quiet_period)
 
 def read_lickometer(dt, params):
     # Placeholder for hardware check logic
@@ -306,14 +316,24 @@ def select_stimuli(Params, Stimuli, catch_frequency = params.catch_frequency):
     #     Stimuli.sprite.rotation = 90
     #params.stim_spatial_frequency.append(0.08) # what the heck is this, it doesn't do anything?
 
-def deliver_reward(params):
-    pass 
-    # put reward logic 
+def deliver_reward(params, task_io):
+    #task_io.s.rotate(params.reward_vol,'dispense')
+    print(f"{params.reward_vol} delivered")
 
-def run_experiment(params):
+def move_spout(params, task_io):
+    if params.spout_position == 'up': #lickable
+        # move spout down
+        #task_io.move_spout(270)
+        params.spout_position = 'down'
+    else: #unlickable
+        # move spout up
+        #task_io.move_spout(90)
+        params.spout_position = 'up'
+
+def run_experiment():
     setup_trial(params)
     # Schedule this function to be called every tick of the event loop
-    pyglet.clock.schedule(read_lickometer) 
+    pyglet.clock.schedule(read_lickometer, params) 
     pyglet.clock.schedule(timer.update)
     pyglet.app.run()
 

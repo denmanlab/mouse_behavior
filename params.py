@@ -25,11 +25,13 @@ class Params:
         self.rewarded_lick_time = None
         self.lick_detected_during_trial = False
         self.trial_outcome = None
+        self.FA_streak = 0
         
         self.last_lick_time = None # last lick time -- used to check quiet period
         self.lick_times = [] # list for full lick times 
         self.current_stim = None
         
+        self.spout_position = 'up' #up is lickable, down is unlickable
 
         # stimuli information for data frame (rest is stored in stimuli class)
         self.stim_contrast = None 
@@ -44,7 +46,8 @@ class Params:
         self.quiet_period = 2 #time required of no licking between trials
         self.stim_duration = 5 # how long (s) that the stimuli is on
         self.catch_frequency = 1 # number of catch trials to append to the stimuli list
-        
+        self.FA_penalty = 5  # number of FAs in a row before timeout 
+        self.timeout_duration = 15 # duration of the timeout
         self.autoreward = False
         self.shaping = False
 
@@ -53,7 +56,7 @@ class Params:
         #dataframe to be saved
         self.trials_df = pd.DataFrame(columns=['trial_number', 
                                                 'contrast', 'orientation', 'catch', 
-                                                'outcome','false_alarm','rewarded','lapse',
+                                                'outcome','false_alarm','rewarded','lapse', 'catch_lapse',
                                                 'quiet_period',
                                                 'wait_time', 
                                                 'trial_start_time','stim_on_time', 'reaction_time',
@@ -63,9 +66,17 @@ class Params:
         self.false_alarm = self.trial_outcome == 'False Alarm'
         self.rewarded = self.trial_outcome == 'Reward'
         self.lapse = self.trial_outcome == 'Lapse'
+        
+        if self.catch and self.lapse:
+            self.catch_lapse = True
+            self.lapse = False
+        else:
+            self.catch_lapse = False
 
         if self.rewarded:
             reaction_time = self.rewarded_lick_time - self.stim_on_time
+        elif self.catch and self.rewarded_lick_time is not None: # if the FA happened after stim-on time
+            reaction_time = self.rewarded_lick_time - self.stim_on_time #rewarded lick time is bad name, lick was not rewarded but oh well. 
         else:
             reaction_time = None
         
@@ -80,6 +91,7 @@ class Params:
             'false_alarm': self.false_alarm,
             'rewarded': self.rewarded,
             'lapse': self.lapse,
+            'catch_lapse': self.catch_lapse,
             'quiet_period': self.quiet_period,
             'wait_time': self.wait_time,
             'trial_start_time': self.trial_start_time,
@@ -89,11 +101,16 @@ class Params:
             'shaping': self.shaping
         }
         #self.trials_df.to_csv(self.path)
-        
-        # plotting! 
-            # create figure
-            # subplot 1: Rolling proportion
-            # subblot 2: cumulutive counts
-            # subplot 3: seconds x wait_time scatter (color coded)
-            # subplot 4: stimuli x waittime (color coded)
-            # subplot 5: "Success": True Lapses + Rewarded
+    
+    def FA_penalty_check(self):
+        ''' Check if the number of false alarms in a row is greater than the FA_penalty'''
+        if self.trial_outcome == 'False Alarm':
+            self.FA_streak += 1
+        else:
+            self.FA_streak = 0
+        if self.FA_streak > self.FA_penalty:
+            self.trial_outcome = 'Lapse'
+            self.FA_streak = 0
+            return True
+        else:
+            return False
