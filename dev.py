@@ -251,7 +251,7 @@ def end_trial(dt, params):
     unschedule(end_trial) # just for safety
     schedule_once(lambda dt: setup_trial(params), params.quiet_period)
 
-def read_lickometer(dt):
+def read_lickometer(dt, params):
     # Placeholder for hardware check logic
     lickometer = False # actually read digital pin
     # If a lick is detected:
@@ -262,7 +262,7 @@ def read_lickometer(dt):
         print(f'Lick at {current_time}')
         process_lick(params)
 
-def select_stimuli(Params, Stimuli, catch_frequency = 1): 
+def select_stimuli(Params, Stimuli, catch_frequency = params.catch_frequency): 
     '''
     this randomly selects which stimuli to show based on stimuli present in stimuli class
     TODO: add logic for choosing electrical stim
@@ -306,11 +306,11 @@ def select_stimuli(Params, Stimuli, catch_frequency = 1):
     #     Stimuli.sprite.rotation = 90
     #params.stim_spatial_frequency.append(0.08) # what the heck is this, it doesn't do anything?
 
-def deliver_reward():
+def deliver_reward(params):
     pass 
     # put reward logic 
 
-def run_experiment():
+def run_experiment(params):
     setup_trial(params)
     # Schedule this function to be called every tick of the event loop
     pyglet.clock.schedule(read_lickometer) 
