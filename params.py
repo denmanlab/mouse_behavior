@@ -1,6 +1,7 @@
 import pandas as pd 
-import os
-
+import os, json
+import datetime
+from numpy import save
 
 class Params:
     def __init__(self, mouse = 'test'):
@@ -14,7 +15,11 @@ class Params:
         ''' setup base and specific session directories.'''
         self.basepath = r'C:\data\behavior'
         self.directory = os.path.join(self.basepath, str(self.mouse))
-        #os.makedirs(self.directory, exist_ok = True
+        if not os.path.exists(self.directory): os.makedirs(self.directory)
+        self.start_time_string = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        self.directory = os.path.join(self.directory,self.start_time_string)
+        if not os.path.exists(self.directory): os.makedirs(self.directory)                              
+        self.filename = os.path.join(self.directory,self.start_time_string+'.csv')
 
     def init_task_variables(self): 
         #trial variables
@@ -100,7 +105,12 @@ class Params:
             'autoreward': self.autoreward,
             'shaping': self.shaping
         }
-        #self.trials_df.to_csv(self.path)
+        self.trials_df.to_csv(self.filename)
+        save(os.path.join(self.directory,'lick_timestamps.npy'), self.lick_times)
+        default = lambda o: f"<<non-serializable: {type(o).__qualname__}>>"
+        j=json.dumps(self.__dict__,default=default)
+        with open(os.path.join(self.directory,'params.json'), "w") as write_file:
+            json.dump(j, write_file)
     
     def FA_penalty_check(self):
         ''' Check if the number of false alarms in a row is greater than the FA_penalty'''
@@ -108,7 +118,7 @@ class Params:
             self.FA_streak += 1
         else:
             self.FA_streak = 0
-        if self.FA_streak > self.FA_penalty:
+        if self.FA_streak >= self.FA_penalty:
             self.trial_outcome = 'Lapse'
             self.FA_streak = 0
             return True

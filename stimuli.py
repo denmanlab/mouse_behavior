@@ -1,5 +1,5 @@
 import pyglet
-pyglet.resource.path = [r'C:\Users\hickm\Documents\github\mouse_behavior\models']#['./models']
+pyglet.resource.path = ['./models']
 pyglet.resource.reindex()
 
 # load visual stimuli

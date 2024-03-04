@@ -35,9 +35,7 @@ TODO:
 '''
 # Default settings (now part of Params)
 params = Params(mouse = 'Test')
-
 plotter = Plotter(params) # plotting functions and tools for performance window
-
 stimuli = Stimuli(params) #keeps track of stimuli settings and sprites. 
 
 timer = Timer()
@@ -45,7 +43,7 @@ timer.start()
 
 #set up arduino
 board_port = 'COM4'
-task_io = None #ArduinoController(board_port)
+task_io = ArduinoController(board_port)
 
 #Windows! 
 #main window
@@ -54,14 +52,14 @@ window.set_location(-2160, 0) # change this for rig setup
 window.set_vsync(False)
 #settings
 imgui.create_context() # Initialize ImGui context
-settings_window = pyglet.window.Window(width = 500, height = 216, caption = "Settings")
-settings_window.set_location(0,50)
+settings_window = pyglet.window.Window(width = 500, height = 400, caption = "Settings")
+settings_window.set_location(100,50)
 settings_window.set_vsync(False)
 imgui_renderer = create_renderer(settings_window)
 
 #monitor stimuli
 monitor_window = pyglet.window.Window(width = 400, height = 400, caption = "Monitor")
-monitor_window.set_location(0, 400)
+monitor_window.set_location(100, 400)
 monitor_window.set_vsync(False)
 
 # plotting performance window
@@ -136,6 +134,24 @@ def on_draw():
     if changed_stim_dur:
         params.stim_duration = new_stim_dur
         print(f'Stim Duration {params.stim_duration}')
+
+    changed_catch_freq, new_catch_freq = imgui.slider_int('Catch Frequency', params.catch_frequency, 0,10,'%.0f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
+    if changed_catch_freq:
+        params.catch_frequency = new_catch_freq
+        print(f'Catch Frequency {params.catch_frequency}')
+    
+    changed_FA_penalty, new_FA_penalty = imgui.slider_int('FA Penalty', params.FA_penalty, 0,10,'%.0f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
+    if changed_FA_penalty:
+        params.FA_penalty = new_FA_penalty
+        print(f'FA Penalty {params.FA_penalty}')
+    
+    changed_timeout_dur, new_timeout_dur = imgui.slider_int('Timeout Duration', params.timeout_duration, 0,30,'%.0f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
+    if changed_timeout_dur:
+        params.timeout_duration = new_timeout_dur
+        print(f'Timeout Duration {params.timeout_duration}')
+
+
+    
     #####BUTTONS
     # shaping
     if imgui.button(f"Shaping: {'True' if params.shaping else 'False'}"):
@@ -317,18 +333,20 @@ def select_stimuli(Params, Stimuli, catch_frequency = params.catch_frequency):
     #params.stim_spatial_frequency.append(0.08) # what the heck is this, it doesn't do anything?
 
 def deliver_reward(params, task_io):
-    #task_io.s.rotate(params.reward_vol,'dispense')
+    task_io.s.rotate(params.reward_vol,'dispense')
     print(f"{params.reward_vol} delivered")
 
 def move_spout(params, task_io):
     if params.spout_position == 'up': #lickable
         # move spout down
-        #task_io.move_spout(270)
+        task_io.move_spout(270)
         params.spout_position = 'down'
+        print(f"spout {params.spout_position}")
     else: #unlickable
         # move spout up
-        #task_io.move_spout(90)
+        task_io.move_spout(90)
         params.spout_position = 'up'
+        print(f"spout {params.spout_position}")
 
 def run_experiment():
     setup_trial(params)

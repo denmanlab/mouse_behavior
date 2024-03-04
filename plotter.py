@@ -3,7 +3,7 @@ import pyglet
 import pandas as pd
 import os
 
-pyglet.resource.path = [r'C:\Users\hickm\Documents\github\mouse_behavior\models']#['./models']
+pyglet.resource.path = ['./models']
 pyglet.resource.reindex()
 class Plotter():
     def __init__(self,params):
@@ -118,8 +118,6 @@ class Plotter():
         ax.set_xlabel('Trial Start Time (seconds)')
         ax.set_ylabel('Reaction Time')
         ax.legend()
-
-
 
     def plot_recent_trial_outcomes(self, ax, df):
         # Assuming df is sorted in ascending order of trials
