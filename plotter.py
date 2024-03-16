@@ -25,7 +25,7 @@ class Plotter():
         self.sprite_progress.y = 10
         self.sprite_progress.scale = 0.8
 
-        self.directory =  r'C:\Users\hickm\Documents\github\mouse_behavior\models'
+        self.directory =  self.params.directory
     
     def update_plots(self, df):
         my_dpi = 82
@@ -89,16 +89,16 @@ class Plotter():
     
     def plot_wait_time_vs_contrast(self, ax, df):
         # Plotting for the 'rewarded' condition in green
-        ax.plot(df[df['rewarded']]['contrast'], df[df['rewarded']]['wait_time'], 'o', color='g', label='Rewarded')
+        ax.plot(df[df['rewarded']]['contrast'], df[df['rewarded']]['wait_time'], 'o', color='g', label='Rewarded',alpha = 0.75)
         
         # Plotting for the 'false_alarm' condition in orange
-        ax.plot(df[df['false_alarm']]['contrast'], df[df['false_alarm']]['wait_time'], 'o', color='orange', label='False Alarm')
+        ax.plot(df[df['false_alarm']]['contrast'], df[df['false_alarm']]['wait_time'], 'o', color='orange', label='False Alarm', alpha = 0.75)
         
         # Plotting for the 'lapse' condition when contrast is not 0, in red
-        ax.plot(df[df['lapse']]['contrast'], df[df['lapse']]['wait_time'], 'o', color='r', label='Lapse')
+        ax.plot(df[df['lapse']]['contrast'], df[df['lapse']]['wait_time'], 'o', color='r', label='Lapse', alpha = 0.75)
         
         # Plotting for the 'lapse' condition when contrast is 0, in blue-green
-        ax.plot(df[df['catch_lapse']]['contrast'], df[df['catch_lapse']]['wait_time'], 'o', color='cyan', label='Catch Lapse')
+        ax.plot(df[df['catch_lapse']]['contrast'], df[df['catch_lapse']]['wait_time'], 'o', color='cyan', label='Catch Lapse',alpha = 0.75)
 
 
         ax.set_xlabel('Contrast')
@@ -109,50 +109,51 @@ class Plotter():
     def plot_reaction_time_vs_starttime(self, ax, df):
         # Filtering and plotting for the 'rewarded = True' condition in green
         rewarded_df = df[df['rewarded'] == True]
-        ax.scatter(rewarded_df['trial_start_time'], rewarded_df['reaction_time'], color='g', label='Rewarded')
+        ax.scatter(rewarded_df['contrast'], rewarded_df['reaction_time'], color='g', label='Rewarded')
 
         # Filtering and plotting for the 'False Alarm = True AND catch = True' condition in yellow
         false_alarm_and_catch_df = df[(df['false_alarm'] == True) & (df['catch'] == True)]
-        ax.scatter(false_alarm_and_catch_df['trial_start_time'], false_alarm_and_catch_df['reaction_time'], color='orange', label='False Alarm & Catch')
+        ax.scatter(false_alarm_and_catch_df['contrast'], false_alarm_and_catch_df['reaction_time'], color='orange', label='False Alarm & Catch')
 
-        ax.set_xlabel('Trial Start Time (seconds)')
+        ax.set_xlabel('Contrast ')
         ax.set_ylabel('Reaction Time')
         ax.legend()
 
     def plot_recent_trial_outcomes(self, ax, df):
         # Assuming df is sorted in ascending order of trials
-        last_trials = df.tail(5)  # Get the last 5 trials
-        
-        # Define outcomes and corresponding colors and markers
-        outcomes = ['rewarded', 'false_alarm', 'lapse', 'catch_lapse']
-        colors = {'rewarded': 'g', 'false_alarm': 'orange', 'lapse': 'r', 'catch_lapse': 'cyan'}
-        markers = {'rewarded': 'o', 'false_alarm': 'o', 'lapse': 'o', 'catch_lapse': 'o'}
-        marker_size = 500  # Large marker size for visibility
-        
-        # The y-value is arbitrary since it doesn't matter for this visualization
-        y_value = 1
-        
-        # Iterate over each of the last trials and plot according to outcome
-        for i, trial in enumerate(last_trials.itertuples(index=True), 1):
-            for outcome in outcomes:
-                if getattr(trial, outcome):  # If the outcome is True for this trial
-                    # Plot with specific color and marker
-                    # Adjusting the scatter plot position so the most recent is on the right
-                    ax.scatter(i, y_value, s=marker_size, color=colors[outcome], label=outcome, marker=markers[outcome])
+        if df.shape[0] > 5:
+            last_trials = df.tail(5)  # Get the last 5 trials
+            
+            # Define outcomes and corresponding colors and markers
+            outcomes = ['rewarded', 'false_alarm', 'lapse', 'catch_lapse']
+            colors = {'rewarded': 'g', 'false_alarm': 'orange', 'lapse': 'r', 'catch_lapse': 'cyan'}
+            markers = {'rewarded': 'o', 'false_alarm': 'o', 'lapse': 'o', 'catch_lapse': 'o'}
+            marker_size = 500  # Large marker size for visibility
+            
+            # The y-value is arbitrary since it doesn't matter for this visualization
+            y_value = 1
+            
+            # Iterate over each of the last trials and plot according to outcome
+            for i, trial in enumerate(last_trials.itertuples(index=True), 1):
+                for outcome in outcomes:
+                    if getattr(trial, outcome):  # If the outcome is True for this trial
+                        # Plot with specific color and marker
+                        # Adjusting the scatter plot position so the most recent is on the right
+                        ax.scatter(i, y_value, s=marker_size, color=colors[outcome], label=outcome, marker=markers[outcome])
 
-        # Simplify the plot
-        ax.set_yticks([])  # Hide y-axis as it's not meaningful
-        # Set x-ticks to correspond to the last 5 trials, with the most recent on the right
-        ax.set_xticks(range(1, 6))  
-        # Adjust x-tick labels so the most recent trial is labeled "1" and appears on the right
-        ax.set_xticklabels(range(5, 0, -1))  
-        ax.set_xlabel('Trials from Most Recent')
-        
-        # To avoid duplicate labels in legend
-        handles, labels = ax.get_legend_handles_labels()
-        unique_labels = dict(zip(labels, handles))
-        ax.legend(unique_labels.values(), unique_labels.keys(), loc='upper left')
-        
-        ax.set_title('Outcomes of the Last 5 Trials')
+            # Simplify the plot
+            ax.set_yticks([])  # Hide y-axis as it's not meaningful
+            # Set x-ticks to correspond to the last 5 trials, with the most recent on the right
+            ax.set_xticks(range(1, 6))  
+            # Adjust x-tick labels so the most recent trial is labeled "1" and appears on the right
+            ax.set_xticklabels(range(5, 0, -1))  
+            ax.set_xlabel('Trials from Most Recent')
+            
+            # To avoid duplicate labels in legend
+            handles, labels = ax.get_legend_handles_labels()
+            unique_labels = dict(zip(labels, handles))
+            ax.legend(unique_labels.values(), unique_labels.keys(), loc='upper left')
+            
+            ax.set_title('Outcomes of the Last 5 Trials')
             
   

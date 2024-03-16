@@ -867,6 +867,7 @@ class ArduinoController():
 #function that the pyglet scheduler calls to constantly monitor for licks independent of what is happening with the task
 def read_licks(dt):
     lickometer_read = task_io.board.digital[task_io.lick_opto_pin].read()
+    
     # print(lickometer_read)
     if not lickometer_read and timer.time - params.spout_timestamps[-1] > 0.5 :
         # print(params.not_licking)
@@ -901,7 +902,7 @@ task_io=ArduinoController(board_port) # use the default pins as set up by the cl
 # task_io.move_spout(90)
 
 #set up parameters
-params = Params(mouse = 'jlh47')
+params = Params(mouse = 'test')
 task_io.move_spout(90);params.spout_positions.append(270);params.spout_timestamps.append(timer.time)
 
 #start the game loop

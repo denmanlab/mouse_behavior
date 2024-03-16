@@ -31,8 +31,9 @@ class Params:
         self.lick_detected_during_trial = False
         self.trial_outcome = None
         self.FA_streak = 0
+        self.timeout = False
         
-        self.last_lick_time = None # last lick time -- used to check quiet period
+        self.last_lick_time = 0 # last lick time -- used to check quiet period
         self.lick_times = [] # list for full lick times 
         self.current_stim = None
         
@@ -44,12 +45,12 @@ class Params:
         self.catch = None # catch trials are where contrast is 0
         
         #to be able to modulate
-        self.reward_vol = 50 # arbitrary units
+        self.reward_vol = 25 # arbitrary units
         self.min_wait_time = 1 # lower number in np.randint
         self.max_wait_time = 5 # upper number in np.randint
         self.wait_time = None # how long after trial starts before stim is on
         self.quiet_period = 2 #time required of no licking between trials
-        self.stim_duration = 5 # how long (s) that the stimuli is on
+        self.stim_duration = 2.5 # how long (s) that the stimuli is on
         self.catch_frequency = 1 # number of catch trials to append to the stimuli list
         self.FA_penalty = 5  # number of FAs in a row before timeout 
         self.timeout_duration = 15 # duration of the timeout
@@ -118,9 +119,7 @@ class Params:
             self.FA_streak += 1
         else:
             self.FA_streak = 0
-        if self.FA_streak >= self.FA_penalty:
-            self.trial_outcome = 'Lapse'
-            self.FA_streak = 0
+        if self.FA_streak > self.FA_penalty:
             return True
         else:
             return False

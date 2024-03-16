@@ -6,10 +6,11 @@ pyglet.resource.reindex()
 from pyglet.clock import schedule_once, unschedule
 import imgui
 
-from random import randint, choice
+from random import randint, choice, uniform
 
 
 import pandas as pd
+import numpy as np
 import datetime, os, glob
 
 # import custom classes
@@ -21,61 +22,45 @@ from plotter import Plotter
 
 '''
 TODO:
- - Implement real licking
  - hardware interfacing
-    - lickometer logic to read actual
-    - spout control
     - cameras
     - electrical stimulus control --
         - i think i need to save out several ASCII files. 
         - then stimulate across.
- - timeout logic for excessive False Alarms
  - 
 
 '''
-# Default settings (now part of Params)
-params = Params(mouse = 'Test')
-plotter = Plotter(params) # plotting functions and tools for performance window
-stimuli = Stimuli(params) #keeps track of stimuli settings and sprites. 
-
-timer = Timer()
-timer.start()
-
-#set up arduino
-board_port = 'COM4'
-task_io = ArduinoController(board_port)
-
 #Windows! 
 #main window
 window = pyglet.window.Window(width=2160, height=1920, caption="Experiment Window")
 window.set_location(-2160, 0) # change this for rig setup
 window.set_vsync(False)
+pyglet.gl.glClearColor(0.5,0.5,0.5,1)
 #settings
 imgui.create_context() # Initialize ImGui context
 settings_window = pyglet.window.Window(width = 500, height = 400, caption = "Settings")
-settings_window.set_location(100,50)
+settings_window.set_location(450,100)
 settings_window.set_vsync(False)
 imgui_renderer = create_renderer(settings_window)
 
+
 #monitor stimuli
 monitor_window = pyglet.window.Window(width = 400, height = 400, caption = "Monitor")
-monitor_window.set_location(100, 400)
+monitor_window.set_location(490, 520)
 monitor_window.set_vsync(False)
+pyglet.gl.glClearColor(0.5,0.5,0.5,1)
 
 # plotting performance window
 task_monitor_plot = pyglet.window.Window(1000, 800)
-task_monitor_plot.set_location(1100,100)
+task_monitor_plot.set_location(900,100)
 task_monitor_plot.set_vsync(False)
-pyglet.gl.glClearColor(0.5,0.5,0.5,1)
+pyglet.gl.glClearColor(0.5,0.5,0.5,1) # Note that these are values 0.0 - 1.0 and not (0-255).
 
 
-####Hardware!
-#spout
-#lickometer
-# stimulator 
 
+#####  game logic, loops, and functions
 
-## game logic, loops, and functions
+## window events 
 @window.event
 def on_draw():
     window.clear()
@@ -130,7 +115,7 @@ def on_draw():
         print(f'Reward Volume: {params.reward_vol}')
 
     
-    changed_stim_dur, new_stim_dur = imgui.slider_int('Stim Duration', params.stim_duration, 1,10,'%.0f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
+    changed_stim_dur, new_stim_dur = imgui.slider_float('Stim Duration', params.stim_duration, 1.0, 10.0, '%.1f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
     if changed_stim_dur:
         params.stim_duration = new_stim_dur
         print(f'Stim Duration {params.stim_duration}')
@@ -180,7 +165,7 @@ def on_draw():
     plotter.sprite_progress.scale = 0.8
     plotter.sprite_progress.draw()
 
-@window.event
+@task_monitor_plot.event
 def on_key_press(symbol, modifiers):
     if symbol == pyglet.window.key.SPACE:
         current_time = timer.time #pyglet.clock.get_default().time()
@@ -191,17 +176,37 @@ def on_key_press(symbol, modifiers):
     
     elif symbol == pyglet.window.key.ESCAPE:
         pyglet.app.exit()
+    
     elif symbol == pyglet.window.key.D:
         deliver_reward(params, task_io)
+    
+    elif symbol == pyglet.window.key.Q:
+        # try:
+        print('cleaning up...')
+        print('saving lick data...')
+        # save(os.path.join(params.directory,'lick_values.npy'),params.lick_values)
+        np.save(os.path.join(params.directory,'lick_timestamps.npy'),params.lick_times)
+        #np.save(os.path.join(params.directory,'spout_positions.npy'),params.spout_positions)
+        #np.save(os.path.join(params.directory,'spout_timestamps.npy'),params.spout_timestamps)
+        pyglet.app.exit()
 
+    elif symbol == pyglet.window.key.R:
+        print('R: up')
+        task_io.move_spout(90) #this is up and lickable
+
+    elif symbol == pyglet.window.key.T:
+        print('T: down')
+        task_io.move_spout(270) #this is down and unlickable
+
+## task functions 
 def setup_trial(params):
     if params.trial_running:  # Check if a trial is already running
         return  # Exit if a trial is in progress
     
-    current_time = pyglet.clock.get_default().time()
-    if params.last_lick_time is None or (current_time - params.last_lick_time) >= params.quiet_period:
-        select_stimuli(params, stimuli, catch_frequency = params.catch_frequency)
-        params.wait_time = randint(params.min_wait_time, params.max_wait_time)
+    current_time = timer.time
+    if (current_time - params.last_lick_time) >= params.quiet_period and not params.timeout:
+        select_stimuli(params, stimuli)
+        params.wait_time = uniform(params.min_wait_time, params.max_wait_time)
         params.trial_running = True
         params.stimulus_visible = False
         params.lick_detected_during_trial = False
@@ -233,6 +238,8 @@ def process_lick(params): #processes lick events detected by read_lickometer for
         if not params.stimulus_visible and params.trial_outcome == None: # stim off and no trial outcome
             params.trial_outcome = "False Alarm"
             params.rewarded_lick_time = None 
+            params.stimulus_visible = False
+            unschedule(start_trial)
             print("False Alarm (FA): Lick detected before stimulus.")
             unschedule(end_trial)
             schedule_once(end_trial,0,params)   
@@ -268,27 +275,36 @@ def end_trial(dt, params):
     # check if mouse needs a timeout!!! i.e., FA streak greater than FA penalty threshold
     if params.FA_penalty_check():
         print(f"FA streak of {params.FA_streak} greater than FA penalty of {params.FA_penalty}. Timeout!")
+        params.FA_streak = 0
+        params.timeout = True
         unschedule(setup_trial)
+        unschedule(start_trial) #just for safety
+        unschedule(end_trial) # just for safety
         move_spout(params, task_io) # move spout down/unlickable
         schedule_once(lambda dt: move_spout(params, task_io), params.timeout_duration) #move spout up/lickable after timeout
         schedule_once(lambda dt: setup_trial(params), params.timeout_duration)
-    else:   #schedule setup trial once mouse stops licking (quiet period)
+        schedule_once(set_timeout_false, params.timeout_duration)
+    else:   #schedule setup trial once mouse stops licking (qquiet period)
         unschedule(start_trial) #just for safety
         unschedule(end_trial) # just for safety
         schedule_once(lambda dt: setup_trial(params), params.quiet_period)
 
+def set_timeout_false(dt): 
+    params.timeout = False
+
 def read_lickometer(dt, params):
     # Placeholder for hardware check logic
-    lickometer = False # actually read digital pin
-    # If a lick is detected:
-    if lickometer:  
+    lickometer = task_io.board.digital[task_io.lick_opto_pin].read() #high is not licking, low is licking
+
+    # If a lick is detected and its been at least 0.5s since last lick:
+    if not lickometer and timer.time - params.last_lick_time > 0.5:
         current_time = timer.time #pyglet.clock.get_default().time()
         params.lick_times.append(current_time)
         params.last_lick_time = current_time
         print(f'Lick at {current_time}')
         process_lick(params)
 
-def select_stimuli(Params, Stimuli, catch_frequency = params.catch_frequency): 
+def select_stimuli(Params, Stimuli): 
     '''
     this randomly selects which stimuli to show based on stimuli present in stimuli class
     TODO: add logic for choosing electrical stim
@@ -297,7 +313,7 @@ def select_stimuli(Params, Stimuli, catch_frequency = params.catch_frequency):
     '''
     ## select a contrast
     contrasts = list(Stimuli.grating_images.keys())
-    for _ in range(catch_frequency):
+    for _ in range(Params.catch_frequency):
         contrasts.append('0')
     
     contrast = choice(contrasts)
@@ -347,13 +363,27 @@ def move_spout(params, task_io):
         task_io.move_spout(90)
         params.spout_position = 'up'
         print(f"spout {params.spout_position}")
-
+            
 def run_experiment():
     setup_trial(params)
     # Schedule this function to be called every tick of the event loop
-    pyglet.clock.schedule(read_lickometer, params) 
+    task_io.move_spout(270) # this moves spout down bc sometimes when turning on the spout moves and hits the mouse. 
+    pyglet.clock.schedule_interval(read_lickometer, 1/1000, params) 
     pyglet.clock.schedule(timer.update)
+    task_io.move_spout(90) # move spout back up to lickable position
     pyglet.app.run()
+
+# Default settings (now part of Params)
+params = Params(mouse = 'jlh47')
+plotter = Plotter(params) # plotting functions and tools for performance window
+stimuli = Stimuli(params) #keeps track of stimuli settings and sprites. 
+
+timer = Timer()
+timer.start()
+
+#set up arduino
+board_port = 'COM4'
+task_io = ArduinoController(board_port)
 
 if __name__ == "__main__":
     run_experiment()
