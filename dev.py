@@ -14,11 +14,12 @@ import numpy as np
 import datetime, os, glob
 
 # import custom classes
-from arduino_controller import ArduinoController
+from arduino_controller_jlh import ArduinoController
 from custom_timer import Timer
 from params import Params
 from stimuli import Stimuli
 from plotter import Plotter
+
 
 '''
 TODO:
@@ -108,7 +109,7 @@ def on_draw():
 
     # Slider for Reward Volume
     changed_reward_vol, new_reward_vol = imgui.slider_int("Reward volume", 
-                                                          params.reward_vol, 1, 100, 
+                                                          params.reward_vol, 10, 200, 
                                                           "%.0f", imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
     if changed_reward_vol:
         params.reward_vol = new_reward_vol
@@ -135,10 +136,48 @@ def on_draw():
         params.timeout_duration = new_timeout_dur
         print(f'Timeout Duration {params.timeout_duration}')
 
+    
+    changed_buzzer_volume, new_buzzer_volume_raw = imgui.slider_float('Buzzer Volume', params.buzzer_volume, 0.00, 1.00, '%.3f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
+
+    # Scale and snap the value to the nearest increment of 0.05
+    new_buzzer_volume = round(new_buzzer_volume_raw / 0.05) * 0.05
+
+    if changed_buzzer_volume:
+        params.buzzer_volume = new_buzzer_volume
+        print(f'Buzzer Volume {params.buzzer_volume:.3f}')
 
     
     #####BUTTONS
     # shaping
+        
+
+    button_width = 30  # Example button width
+    button_height = 20  # Example button height
+
+    first_button = True
+    for contrast in stimuli.grating_images.keys():
+        button_label = f"{contrast}"
+        button_color = (0, 0.5, 0) if contrast in stimuli.contrasts else (0.5, 0, 0) # Dark green if IN, dark red if OUT
+
+        # Adjust the button color based on its state
+        imgui.push_style_color(imgui.COLOR_BUTTON, *button_color)
+
+        if not first_button:
+            imgui.same_line()
+        else:
+            first_button = False
+
+        if imgui.button(button_label, button_width, button_height):
+            if contrast in stimuli.contrasts:
+                stimuli.contrasts.remove(contrast)
+                print(f'Removed {contrast} from contrasts')
+            else:
+                stimuli.contrasts.append(contrast)
+                print(f'Added {contrast} to contrasts')
+
+        # Pop the button color style to return to default
+        imgui.pop_style_color(1)
+
     if imgui.button(f"Shaping: {'True' if params.shaping else 'False'}"):
         params.shaping = not params.shaping  # Toggle the shaping state
         print(f'Shaping: {"On" if params.shaping else "Off"}')
@@ -150,6 +189,7 @@ def on_draw():
     imgui.end()
     imgui.render()
     imgui_renderer.render(imgui.get_draw_data())
+
 
 @settings_window.event
 def on_close():
@@ -188,6 +228,7 @@ def on_key_press(symbol, modifiers):
         np.save(os.path.join(params.directory,'lick_timestamps.npy'),params.lick_times)
         #np.save(os.path.join(params.directory,'spout_positions.npy'),params.spout_positions)
         #np.save(os.path.join(params.directory,'spout_timestamps.npy'),params.spout_timestamps)
+        task_io.board.exit()
         pyglet.app.exit()
 
     elif symbol == pyglet.window.key.R:
@@ -197,6 +238,10 @@ def on_key_press(symbol, modifiers):
     elif symbol == pyglet.window.key.T:
         print('T: down')
         task_io.move_spout(270) #this is down and unlickable
+
+    elif symbol == pyglet.window.key.S:
+        print('Solenoid droplet')
+        task_io.droplet(0.1)
 
 ## task functions 
 def setup_trial(params):
@@ -230,12 +275,13 @@ def start_trial(dt, params):
     params.stim_on_time = timer.time #pyglet.clock.get_default().time()
     print(f"Stimulus Contrast {params.stim_contrast} on")
     if params.autoreward: 
-        deliver_reward()
+        deliver_reward(params, task_io)
     schedule_once(end_trial, params.stim_duration, params)
 
 def process_lick(params): #processes lick events detected by read_lickometer for task relevancy
     if params.trial_running:
         if not params.stimulus_visible and params.trial_outcome == None: # stim off and no trial outcome
+            task_io.buzz(volume = params.buzzer_volume) # buzz for an auditory learning cue
             params.trial_outcome = "False Alarm"
             params.rewarded_lick_time = None 
             params.stimulus_visible = False
@@ -245,6 +291,7 @@ def process_lick(params): #processes lick events detected by read_lickometer for
             schedule_once(end_trial,0,params)   
         elif params.stimulus_visible and params.trial_outcome == None:
             if params.catch: # that is stim contrast is off 
+                task_io.buzz(volume = params.buzzer_volume) # buzz for an auditory learning cue
                 params.trial_outcome = "False Alarm"
                 params.rewarded_lick_time = timer.time # rewarded_lick_time is bad variable name for this but its fine. i don't want to create new variable
                 print("Catch: Lick detected after 0 Contrast.")
@@ -268,10 +315,6 @@ def end_trial(dt, params):
     params.trial_running = False
     params.stimulus_visible = False
     
-    # Update and save DF
-    params.update_df()
-    plotter.update_plots(params.trials_df)
-
     # check if mouse needs a timeout!!! i.e., FA streak greater than FA penalty threshold
     if params.FA_penalty_check():
         print(f"FA streak of {params.FA_streak} greater than FA penalty of {params.FA_penalty}. Timeout!")
@@ -288,14 +331,19 @@ def end_trial(dt, params):
         unschedule(start_trial) #just for safety
         unschedule(end_trial) # just for safety
         schedule_once(lambda dt: setup_trial(params), params.quiet_period)
+    
+    # Update and save DF
+    params.update_df()
+    plotter.update_plots(params.trials_df)
 
 def set_timeout_false(dt): 
     params.timeout = False
 
 def read_lickometer(dt, params):
     # Placeholder for hardware check logic
-    lickometer = task_io.board.digital[task_io.lick_opto_pin].read() #high is not licking, low is licking
-
+    lickometer = task_io.ir_pin.read()
+    #lickometer = task_io.board.digital[10].read() #high is licking, low is not licking
+    
     # If a lick is detected and its been at least 0.5s since last lick:
     if not lickometer and timer.time - params.last_lick_time > 0.5:
         current_time = timer.time #pyglet.clock.get_default().time()
@@ -312,9 +360,11 @@ def select_stimuli(Params, Stimuli):
     catch_frequency changes how likely a null trial is.. int: the actual number of zero contrasts added to selection pool
     '''
     ## select a contrast
-    contrasts = list(Stimuli.grating_images.keys())
-    for _ in range(Params.catch_frequency):
-        contrasts.append('0')
+    contrasts = Stimuli.contrasts #create a copy just to not mess with logic below
+    
+    if Params.catch_frequency > 0:
+        for _ in range(Params.catch_frequency):
+            contrasts.append('0')
     
     contrast = choice(contrasts)
 
@@ -322,12 +372,22 @@ def select_stimuli(Params, Stimuli):
         Params.catch = True
         Stimuli.sprite = pyglet.sprite.Sprite(Stimuli.blank_image, x = 1000, y = 450)
         Stimuli.sprite.scale = 4.8
+        Stimuli.sprite.visible = False
+
+        Stimuli.sprite2 = pyglet.sprite.Sprite(Stimuli.blank_image, x = 200, y = 400)
+        # Set the anchor point to the center of sprite2 for true centering
+        Stimuli.sprite2.x = monitor_window.width // 2
+        Stimuli.sprite2.y = monitor_window.height // 2
+        Stimuli.sprite2.scale = 0.5
+        Stimuli.sprite2.anchor_x = Stimuli.sprite2.width // 2
+        Stimuli.sprite2.anchor_y = Stimuli.sprite2.height // 2
     else: 
         Params.catch=False
         Stimuli.grating_image = Stimuli.grating_images[contrast]
         Stimuli.grating_image.anchor_x = Stimuli.grating_image.width // 2 #center image
         Stimuli.sprite = pyglet.sprite.Sprite(Stimuli.grating_image, x = 1000, y = 450)
         Stimuli.sprite.scale = 4.8
+        Stimuli.sprite.visible = True
         
         Stimuli.sprite2 = pyglet.sprite.Sprite(Stimuli.grating_image, x = 200, y = 400)
         # Set the anchor point to the center of sprite2 for true centering
@@ -349,8 +409,9 @@ def select_stimuli(Params, Stimuli):
     #params.stim_spatial_frequency.append(0.08) # what the heck is this, it doesn't do anything?
 
 def deliver_reward(params, task_io):
-    task_io.s.rotate(params.reward_vol,'dispense')
-    print(f"{params.reward_vol} delivered")
+    #task_io.s.rotate(params.reward_vol,'dispense') this was for Stepper!
+    task_io.droplet(params.reward_vol/1000) #divide by 1000 to convert to seconds
+    print(f"solenoid open for {params.reward_vol} ms")
 
 def move_spout(params, task_io):
     if params.spout_position == 'up': #lickable
@@ -367,14 +428,14 @@ def move_spout(params, task_io):
 def run_experiment():
     setup_trial(params)
     # Schedule this function to be called every tick of the event loop
-    task_io.move_spout(270) # this moves spout down bc sometimes when turning on the spout moves and hits the mouse. 
+    
     pyglet.clock.schedule_interval(read_lickometer, 1/1000, params) 
     pyglet.clock.schedule(timer.update)
     task_io.move_spout(90) # move spout back up to lickable position
     pyglet.app.run()
 
 # Default settings (now part of Params)
-params = Params(mouse = 'jlh47')
+params = Params(mouse = 'c104')
 plotter = Plotter(params) # plotting functions and tools for performance window
 stimuli = Stimuli(params) #keeps track of stimuli settings and sprites. 
 
@@ -382,8 +443,8 @@ timer = Timer()
 timer.start()
 
 #set up arduino
-board_port = 'COM4'
-task_io = ArduinoController(board_port)
+task_io = ArduinoController('COM7')
+task_io.move_spout(270) # this moves spout down bc sometimes when turning on the spout moves and hits the mouse. 
 
 if __name__ == "__main__":
     run_experiment()

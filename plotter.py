@@ -25,7 +25,10 @@ class Plotter():
         self.sprite_progress.y = 10
         self.sprite_progress.scale = 0.8
 
-        self.directory =  self.params.directory
+        try:
+            self.directory =  self.params.directory
+        except:
+            self.directory = self.params['directory']
     
     def update_plots(self, df):
         my_dpi = 82
@@ -65,12 +68,12 @@ class Plotter():
         self.sprite_progress.scale = 0.8
     
     def plot_rolling_proportion(self, ax, df):
-        ax.plot(df['rewarded'].rolling(10).mean(), 'g', label='rewarded')
-        ax.plot(df['false_alarm'].rolling(10).mean(), 'orange', label='false alarm')
-        ax.plot(df['lapse'].rolling(10).mean(), 'r', label='lapse')
+        ax.plot(df['rewarded'].rolling(10).mean(), 'g')
+        ax.plot(df['false_alarm'].rolling(10).mean(), 'orange')
+        ax.plot(df['lapse'].rolling(10).mean(), 'r')
         ax.set_xlabel('trial')
         ax.set_ylabel('rolling proportion of trials')
-        ax.legend()
+        
 
     def plot_cumulative_count(self, ax,df):
         ax.plot(df['rewarded'].cumsum(), 'g', label='rewarded')
@@ -84,6 +87,7 @@ class Plotter():
         ax.plot(df[df['rewarded']]['trial_start_time'], df[df['rewarded']]['wait_time'], 'o', color='g', label='rewarded')
         ax.plot(df[df['false_alarm']]['trial_start_time'], df[df['false_alarm']]['wait_time'], 'o', color='orange', label='false alarm')
         ax.plot(df[df['lapse']]['trial_start_time'], df[df['lapse']]['wait_time'], 'o', color='r', label='lapse')
+        ax.plot(df[df['catch_lapse']]['trial_start_time'], df[df['catch_lapse']]['wait_time'], 'o', color='cyan', label='catch lapse')
         ax.set_xlabel('seconds')
         ax.set_ylabel('wait time')
     
@@ -156,4 +160,49 @@ class Plotter():
             
             ax.set_title('Outcomes of the Last 5 Trials')
             
-  
+    def plot_outcomes_by_contrast(self, ax, df):
+        """
+        Plots stacked bar chart of outcomes by contrast for a given DataFrame.
+
+        Parameters:
+        - ax: Matplotlib Axes object where the plot will be drawn.
+        - df: Pandas DataFrame containing the data.
+
+        The DataFrame is expected to have columns for 'contrast' and outcomes 
+        ('rewarded', 'false_alarm', 'lapse', 'catch_lapse'), with boolean values.
+        """
+        # Convert outcomes to boolean for easy summing/counting
+        for outcome in ["rewarded", "false_alarm", "lapse", "catch_lapse"]:
+            df[outcome] = df[outcome].astype(bool)
+
+        # Group by 'contrast' and calculate the sum of each outcome
+        grouped = df.groupby('contrast')[["rewarded", "false_alarm", "lapse", "catch_lapse"]].sum()
+
+        # Filter contrasts with more than 10 trials
+        total_trials = grouped.sum(axis=1)
+        grouped_filtered = grouped[total_trials > 10]
+
+        # Calculate proportions for the filtered DataFrame
+        grouped_proportions = grouped_filtered.div(grouped_filtered.sum(axis=1), axis=0)
+
+        # Plot
+        colors = ['green', 'yellow', 'red', 'cyan']
+        grouped_proportions.plot(kind='bar', stacked=True, color=colors, ax=ax)
+
+        ax.set_xlabel('Contrast')
+        ax.set_ylabel('Proportion')
+        ax.set_title('Outcomes by Contrast for Contrasts with More Than 10 Trials')
+
+        # Hide the legend
+        ax.get_legend().set_visible(False)
+
+        # Annotate with raw numbers
+        for i, contrast in enumerate(grouped_proportions.index):
+            cumulative_height = 0
+            for outcome, color in zip(["rewarded", "false_alarm", "lapse", "catch_lapse"], colors):
+                value = grouped_filtered.loc[contrast, outcome]
+                proportion = grouped_proportions.loc[contrast, outcome]
+                if value > 0:
+                    y = cumulative_height + proportion / 2
+                    ax.text(i, y, str(value), ha='center', va='center', color='k')
+                    cumulative_height += proportion

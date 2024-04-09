@@ -1,4 +1,5 @@
 from pyfirmata import ArduinoMega, util, INPUT, SERVO, OUTPUT
+import time
 class ArduinoController():
     def __init__(self,board_string,horizontal=0,vertical=1,digital_channels=[53,51,49,47,45,43],food_reward_pin=8):
         self.board =  ArduinoMega(board_string)
@@ -10,13 +11,15 @@ class ArduinoController():
         self.lick_opto_pin_low_when_licked = 31
         self.lick_opto_pin_high_when_licked = 35
         self.lick_opto_pin = self.lick_opto_pin_low_when_licked
+        it = util.Iterator(self.board)
+        it.start()
 
         #set up reward delivery====================================================================
         # try:
-        import sys
-        sys.path.append('C:\github\syringe_pump') # https://github.com/dougollerenshaw/syringe_pump
-        from stepper import Stepper
-        self.s = Stepper(mode='arduino',port='COM4',syringe='3mL',board=self .board)
+        #import sys
+        #sys.path.append('C:\github\syringe_pump') # https://github.com/dougollerenshaw/syringe_pump
+        #from stepper import Stepper
+        #self.s = Stepper(mode='arduino',port=board_string,syringe='3mL',board=self.board)
         # s.enable()
         # except:
         #     print("Error:", sys.exc_info()[0])
@@ -27,8 +30,7 @@ class ArduinoController():
         self.init()
 
     def init(self):
-        it = util.Iterator(self.board)
-        it.start()
+
         self.board.analog[self.horizontal_channel].enable_reporting()#horizontal
         self.board.analog[self.vertical_channel].enable_reporting()#vertical
 
@@ -44,9 +46,10 @@ class ArduinoController():
         self.board.digital[43].mode=OUTPUT
         self.board.digital[44].mode=OUTPUT
 
-        self.board.digital[self.lick_opto_pin_low_when_licked].mode=INPUT
+        self.board.digital[10].mode=INPUT
         self.board.digital[self.lick_opto_pin_high_when_licked].mode=INPUT
         # self.board.analog[self.].enable_reporting()
+        
 
 
     # joystick 

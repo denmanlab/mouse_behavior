@@ -45,17 +45,18 @@ class Params:
         self.catch = None # catch trials are where contrast is 0
         
         #to be able to modulate
-        self.reward_vol = 25 # arbitrary units
-        self.min_wait_time = 1 # lower number in np.randint
-        self.max_wait_time = 5 # upper number in np.randint
+        self.reward_vol = 30 # time solenoid is open in ms -- need to titrate for exact weights.. but 50ms seems like a good starting spot
+        self.min_wait_time = 1 # lower number in np.randfloat
+        self.max_wait_time = 3 # upper number in np.randfloat
         self.wait_time = None # how long after trial starts before stim is on
-        self.quiet_period = 2 #time required of no licking between trials
-        self.stim_duration = 2.5 # how long (s) that the stimuli is on
-        self.catch_frequency = 1 # number of catch trials to append to the stimuli list
-        self.FA_penalty = 5  # number of FAs in a row before timeout 
+        self.quiet_period = 1 #time required of no licking between trials
+        self.stim_duration = 1.5 # how long (s) that the stimuli is on
+        self.catch_frequency = 0 # number of catch trials to append to the stimuli list
+        self.FA_penalty = 3  # number of FAs in a row before timeout 
         self.timeout_duration = 15 # duration of the timeout
         self.autoreward = False
         self.shaping = False
+        self.buzzer_volume = 0.05
 
         #buttons = [self.shaping, self.autoreward] #toggles
     

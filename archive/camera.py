@@ -20,6 +20,7 @@ import sys
 import keyboard
 import time
 
+
 global continue_recording
 continue_recording = True
 

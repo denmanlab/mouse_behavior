@@ -19,8 +19,9 @@ class Stimuli():
                         '16': pyglet.resource.image('grating_16.jpg'),
                         '8' : pyglet.resource.image('grating_8.jpg'),
                         '4' : pyglet.resource.image('grating_4.jpg'),
-                        '2' : pyglet.resource.image('grating_4.jpg'),}
-        
+                        '2' : pyglet.resource.image('grating_4.jpg'),
+                        '0' : self.blank_image}
+        self.contrasts = list(self.grating_images.keys())
         self.sprite = pyglet.sprite.Sprite(self.grating_image, x = 600, y = 800)
         self.sprite.scale = 0.8
 
