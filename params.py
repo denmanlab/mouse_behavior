@@ -67,7 +67,7 @@ class Params:
                                                 'quiet_period',
                                                 'wait_time', 
                                                 'trial_start_time','stim_on_time', 'reaction_time',
-                                                'autoreward', 'shaping'
+                                                'autoreward', 'shaping', 'reward_volume', 'buzzer_volume'
                                                 ])
     def update_df(self): # called after every trial to update the DF
         self.false_alarm = self.trial_outcome == 'False Alarm'
@@ -105,7 +105,9 @@ class Params:
             'reaction_time': reaction_time,
             'stim_on_time': self.stim_on_time,
             'autoreward': self.autoreward,
-            'shaping': self.shaping
+            'shaping': self.shaping,
+            'reward_volume': self.reward_vol,
+            'buzzer_volume': self.buzzer_volume
         }
         self.trials_df.to_csv(self.filename)
         save(os.path.join(self.directory,'lick_timestamps.npy'), self.lick_times)
