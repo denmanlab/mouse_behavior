@@ -4,8 +4,9 @@ import datetime
 from numpy import save
 
 class Params:
-    def __init__(self, mouse = 'test'):
+    def __init__(self, mouse = 'test', weight = None):
         self.mouse = mouse
+        self.weight = weight
         self.setup_directories()
         self.init_task_variables()
         #camera
@@ -43,6 +44,7 @@ class Params:
         self.stim_contrast = None 
         self.orientation = None # not currently implemented
         self.catch = None # catch trials are where contrast is 0
+        self.PAUSED = False
         
         #to be able to modulate
         self.reward_vol = 30 # time solenoid is open in ms -- need to titrate for exact weights.. but 50ms seems like a good starting spot
@@ -111,11 +113,18 @@ class Params:
         }
         self.trials_df.to_csv(self.filename)
         save(os.path.join(self.directory,'lick_timestamps.npy'), self.lick_times)
+        
+        default = lambda o: f"<<non-serializable: {type(o).__qualname__}>>"
+        # Open the file where the JSON data will be stored
+        with open(os.path.join(self.directory, 'params.json'), "w") as write_file:
+            # Directly dump the dictionary to the file using json.dump
+            json.dump(self.__dict__, write_file, default=default)
+        '''
         default = lambda o: f"<<non-serializable: {type(o).__qualname__}>>"
         j=json.dumps(self.__dict__,default=default)
-        with open(os.path.join(self.directory,'params.json'), "w") as write_file:
-            json.dump(j, write_file)
-    
+        with open(os.path.join(self.directory, 'params.json'), "w") as write_file:
+            write_file.write(j)
+        '''
     def FA_penalty_check(self):
         ''' Check if the number of false alarms in a row is greater than the FA_penalty'''
         if self.trial_outcome == 'False Alarm':

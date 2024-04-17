@@ -31,6 +31,10 @@ TODO:
  - 
 
 '''
+# Collect user input before running the experiment
+mouse_name = input("Enter the mouse name: ")
+mouse_weight = input("Enter the mouse weight (g): ")
+
 #Windows! 
 #main window
 window = pyglet.window.Window(width=2160, height=1920, caption="Experiment Window")
@@ -242,8 +246,50 @@ def on_key_press(symbol, modifiers):
     elif symbol == pyglet.window.key.S:
         print('Solenoid droplet')
         task_io.droplet(0.1)
+    elif symbol == pyglet.window.key.P:
+        if params.PAUSED:
+            unpause(params)
+            print('Unpaused, setup trial scheduled')
+        else:
+            pause(params)
+            print('Paused: all events unscheduled')
+    elif symbol == pyglet.window.key.M:
+        manual_stim(params)
+            
 
 ## task functions 
+def hide_stimulus(dt, params):  
+    params.stimulus_visible = False
+
+def manual_stim(params):
+    if not params.PAUSED:
+        pause(params)
+        resume = True
+    else: 
+        resume = False
+    select_stimuli(params, stimuli)
+    params.stimulus_visible = True
+    schedule_once(scheduled_reward, 0.25, params, task_io)
+    # Schedule to turn the stimulus off after 1 second
+    schedule_once(hide_stimulus, params.stim_duration, params)
+    if resume:
+        unpause(params)
+        
+def scheduled_reward(dt, params, task_io): #wrapper for this that takes a dt for edge cases where you may want to schedule
+    deliver_reward(params, task_io)
+def pause(params):
+    unschedule(setup_trial)
+    unschedule(start_trial) 
+    unschedule(end_trial) 
+    unschedule(hide_stimulus)
+    params.trial_running = False
+    params.stimulus_visible = False 
+    params.PAUSED = True
+
+def unpause(params):
+    params.PAUSED = False
+    setup_trial(params)
+
 def setup_trial(params):
     if params.trial_running:  # Check if a trial is already running
         return  # Exit if a trial is in progress
@@ -274,7 +320,7 @@ def start_trial(dt, params):
     params.stimulus_visible = True
     params.stim_on_time = timer.time #pyglet.clock.get_default().time()
     print(f"Stimulus Contrast {params.stim_contrast} on")
-    if params.autoreward: 
+    if params.autoreward == True and params.stim_contrast != 0:
         deliver_reward(params, task_io)
     schedule_once(end_trial, params.stim_duration, params)
 
@@ -434,10 +480,14 @@ def run_experiment():
     task_io.move_spout(90) # move spout back up to lickable position
     pyglet.app.run()
 
-# Default settings (now part of Params)
-params = Params(mouse = 'c104')
+
+# Create Params instance with user inputs
+params = Params(mouse=mouse_name, weight=mouse_weight) #these variables are set at the top of the script w an input so they occur before drawn windows
+
 plotter = Plotter(params) # plotting functions and tools for performance window
 stimuli = Stimuli(params) #keeps track of stimuli settings and sprites. 
+#insert list
+
 
 timer = Timer()
 timer.start()
