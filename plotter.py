@@ -94,7 +94,7 @@ class Plotter():
 
         
         ## Summary of recent sessions (currently 10)
-        combined_df = self.load_and_combine_dataframes(base_path = r"\\denmanlab\s1\behavior\detection_task\c104")
+        combined_df = self.load_and_combine_dataframes()
         sum0 = plt.subplot(gs[4:6,0])
         self.plot_detection_curve_percent_correct(sum0, combined_df)
         sum0.set_title('Averaged detection curve')
@@ -129,6 +129,9 @@ class Plotter():
         sum4.set_title('High contrast outcomes by Wait Time')
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.96]) 
+        folder = self.params['directory']
+        save_str = os.path.join(folder, 'summary_plot.png')
+        plt.savefig(save_str)
     
     def update_plots(self, df):
         my_dpi = 82
@@ -381,8 +384,7 @@ class Plotter():
 
     def plot_cumulative_and_ratio(ax1, combined_df):
         df = combined_df.copy()
-        df['day'] = pd.to_datetime(df['session'], format='%Y-%m-%d_%H-%M-%S').dt.strftime('%b%d')
-        df.sort_values('day', inplace=True)
+        df.sort_values('session', inplace=True)
 
         # Define colors for the various measures
         colors = {
@@ -455,7 +457,7 @@ class Plotter():
         color_dict = dict(zip(unique_sessions, session_colors))
 
         # Bar plot for mean percent correct with confidence interval (CI) for SEM
-        sns.barplot(x='contrast', y='mean', data=summary_stats, ci='sem', color='gray', capsize=1, ax=ax)
+        sns.barplot(x='contrast', y='mean', data=summary_stats, color='gray', capsize=1, ax=ax)
 
         # Add jitter and use session order for the hue to get a gradient effect
         sns.stripplot(x='contrast', y='percent_correct', data=percent_correct, 
@@ -501,7 +503,7 @@ class Plotter():
         percent_correct.reset_index(drop=True, inplace=True)
         
         # Pivot the DataFrame to get 'day' on the y-axis and 'contrast' on the x-axis
-        heatmap_data = percent_correct.pivot("contrast", "day", "percent_correct")
+        heatmap_data = percent_correct.pivot(index="contrast", columns="day", values="percent_correct")
         
         # Reverse the order of the rows to have the top of the y-axis as older and bottom as newer
         heatmap_data = heatmap_data.iloc[::-1]
@@ -579,14 +581,26 @@ class Plotter():
         # Add the legend
         ax.legend()
 
+    
+    def plot_weight_by_day(self, ax, combined_df):
+        # get the weights for each day (each day will have redundant information)
+        # deal with np.nans from when i previously didn't record weights
+        # plot line graph 
+        pass
+    
+    def plot_water_delivered_by_day(self, ax, combined_df):
+        # sum the water delivered for each day (sum of each row by day)
+        # plot by each day
+        pass
+
     def load_and_combine_dataframes(self, base_path = None):
         if base_path is None:
-            base_path = os.path.dirname(params['directory'])
+            base_path = os.path.dirname(self.params['directory'])
         # List directories and sort them by parsing each as a pendulum instance
         sorted_dir_names = sorted(next(os.walk(base_path))[1], key=lambda x: pendulum.from_format(x, 'YYYY-MM-DD_HH-mm-ss'))
 
-        # Take the 10 most recent directories
-        recent_dirs = sorted_dir_names[-10:]
+        # Take the 10 most recent directories or if less than 10 all the most recents. 
+        recent_dirs = sorted_dir_names[-10:] if len(sorted_dir_names) >= 10 else sorted_dir_names
 
         all_data = []  # List to store individual session dataframes
         params_list = []  # List to store params from each session
@@ -606,6 +620,10 @@ class Plotter():
             with open(json_path, 'r') as file:
                 params = json.load(file)
             params_list.append(params)
+            
+        # Get weight if available, or use np.nan if not
+        weight = float(params.get('weight', np.nan))
+        df['weight'] = weight 
 
         # Combine all DataFrames into one
         combined_df = pd.concat(all_data, ignore_index=True)
