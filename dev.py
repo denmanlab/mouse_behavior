@@ -499,8 +499,8 @@ params = Params(mouse=mouse_name, weight=mouse_weight) #these variables are set 
 plotter = Plotter(params) # plotting functions and tools for performance window
 stimuli = Stimuli(params) #keeps track of stimuli settings and sprites. 
 
-if params.contrasts is not None: #set to None by default but loaded by previous params if they exist
-    params.contrasts = stimuli.contrasts
+if params.contrasts is None: #this is set to None by default in PARAMS but loaded by previous params if they exist
+    params.contrasts = stimuli.contrasts #set contrasts to the default contrasts in the stimuli class
 
 
 timer = Timer()
