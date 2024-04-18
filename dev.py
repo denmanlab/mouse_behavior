@@ -24,10 +24,16 @@ from plotter import Plotter
 '''
 TODO:
  - hardware interfacing
-    - cameras
-    - electrical stimulus control --
-        - i think i need to save out several ASCII files. 
-        - then stimulate across.
+    - cameras (some work done with this but not really implemented)
+    - electrical stimulus control
+        - likely will use am4100 
+        - have a class that interfaces with the 4100 that can send commands
+        - need to just integrate this class into game logic
+        - add ability to select stimuli in stimuli and params and in gui.
+        - test latencies.
+        - copy stimuli outputs and params and etc into classes...
+        - determine if i should use game (arduino/nidaq) to external trigger stimulator or figure out how to internal trigger it
+        - 
  - 
 
 '''
