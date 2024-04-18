@@ -141,14 +141,14 @@ def on_draw():
         print(f'Timeout Duration {params.timeout_duration}')
 
     
-    changed_buzzer_volume, new_buzzer_volume_raw = imgui.slider_float('Buzzer Volume', params.buzzer_volume, 0.00, 1.00, '%.3f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
+    changed_buzzer_volume, new_buzzer_volume_raw = imgui.slider_float('Buzzer Volume', params.buzzer_volume, 0.00, 1.00, '%.2f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
 
     # Scale and snap the value to the nearest increment of 0.05
     new_buzzer_volume = round(new_buzzer_volume_raw / 0.05) * 0.05
 
     if changed_buzzer_volume:
         params.buzzer_volume = new_buzzer_volume
-        print(f'Buzzer Volume {params.buzzer_volume:.3f}')
+        print(f'Buzzer Volume {params.buzzer_volume:.2f}')
 
     
     #####BUTTONS
@@ -161,7 +161,7 @@ def on_draw():
     first_button = True
     for contrast in stimuli.grating_images.keys():
         button_label = f"{contrast}"
-        button_color = (0, 0.5, 0) if contrast in stimuli.contrasts else (0.5, 0, 0) # Dark green if IN, dark red if OUT
+        button_color = (0, 0.5, 0) if contrast in params.contrasts else (0.5, 0, 0) # Dark green if IN, dark red if OUT
 
         # Adjust the button color based on its state
         imgui.push_style_color(imgui.COLOR_BUTTON, *button_color)
@@ -172,21 +172,33 @@ def on_draw():
             first_button = False
 
         if imgui.button(button_label, button_width, button_height):
-            if contrast in stimuli.contrasts:
-                stimuli.contrasts.remove(contrast)
+            if contrast in params.contrasts:
+                params.contrasts.remove(contrast)
                 print(f'Removed {contrast} from contrasts')
             else:
-                stimuli.contrasts.append(contrast)
+                params.contrasts.append(contrast)
                 print(f'Added {contrast} to contrasts')
 
         # Pop the button color style to return to default
         imgui.pop_style_color(1)
 
+
+    button_color = (0, 0.5, 0) if params.PAUSED else (0.5, 0, 0) # Dark green if playing, dark red if paused
+    imgui.push_style_color(imgui.COLOR_BUTTON, *button_color)
+    if imgui.button(f"Pause Button: {'PAUSED' if params.PAUSED else 'Playing'}"):
+        pause(params)
+    
+    imgui.same_line()
+    button_color = (0, 0.5, 0) if params.shaping else (0.5, 0, 0) # Dark green if shaping, dark red if not
+    imgui.push_style_color(imgui.COLOR_BUTTON, *button_color)
     if imgui.button(f"Shaping: {'True' if params.shaping else 'False'}"):
         params.shaping = not params.shaping  # Toggle the shaping state
         print(f'Shaping: {"On" if params.shaping else "Off"}')
 
     # autoreward
+    imgui.same_line()
+    button_color = (0, 0.5, 0) if params.autoreward else (0.5, 0, 0) # Dark green if autoreward, dark red if not
+    imgui.push_style_color(imgui.COLOR_BUTTON, *button_color)
     if imgui.button(f"AutoReward: {'True' if params.autoreward else 'False'}"):
         params.autoreward = not params.autoreward  # Toggle the autoreward state
         print(f'AutoReward: {"On" if params.autoreward else "Off"}')
@@ -406,7 +418,7 @@ def select_stimuli(Params, Stimuli):
     catch_frequency changes how likely a null trial is.. int: the actual number of zero contrasts added to selection pool
     '''
     ## select a contrast
-    contrasts = Stimuli.contrasts #create a copy just to not mess with logic below
+    contrasts = Params.contrasts #create a copy just to not mess with logic below
     
     if Params.catch_frequency > 0:
         for _ in range(Params.catch_frequency):
@@ -486,7 +498,9 @@ params = Params(mouse=mouse_name, weight=mouse_weight) #these variables are set 
 
 plotter = Plotter(params) # plotting functions and tools for performance window
 stimuli = Stimuli(params) #keeps track of stimuli settings and sprites. 
-#insert list
+
+if params.contrasts is not None: #set to None by default but loaded by previous params if they exist
+    params.contrasts = stimuli.contrasts
 
 
 timer = Timer()

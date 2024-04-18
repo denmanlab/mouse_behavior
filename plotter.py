@@ -51,10 +51,10 @@ class Plotter():
 
 
     def summary_plots(self, df):
-        # Set up figure and gridspec
+        # set up figure and gridspec
         f = plt.figure(figsize=(15, 20))
-        gs = gridspec.GridSpec(7, 3, height_ratios=[2, 2, 3, 0.1, 2, 2, 5], width_ratios=[5, 2, 2])
-        # Add main title and subheadings
+        gs = gridspec.GridSpec(8, 3, height_ratios=[2, 2, 3, 0.1, 2, 2, 2.5, 2.5], width_ratios=[5, 2, 2])
+        # add main title and subheadings
         mouse_name = self.params['mouse']
         session_directory = self.params['start_time_string']
         f.suptitle(f'Mouse: {mouse_name}', fontsize=28)
@@ -91,6 +91,7 @@ class Plotter():
 
         ax4 = plt.subplot(gs[1:3, 2])  
         self.plot_reaction_time_vs_starttime(ax4, df)
+        ax4.legend_.remove()
 
         
         ## Summary of recent sessions (currently 10)
@@ -99,7 +100,7 @@ class Plotter():
         self.plot_detection_curve_percent_correct(sum0, combined_df)
         sum0.set_title('Averaged detection curve')
         sum0.legend_.remove()
-        sum05 = plt.subplot(gs[6,0])
+        sum05 = plt.subplot(gs[6:8,0])
         self.plot_percent_correct_heatmap(sum05, combined_df)
         sum05.set_title('% Correct Heatmap by day')
         
@@ -118,17 +119,22 @@ class Plotter():
         self.plot_mean_wait_time_by_day(sum2half, combined_df)
         sum2half.set_title('Mean Wait Time by Day')
 
-        #sum3 = plt.subplot(gs[5, 1])
-        #try:
-        #    self.plot_cumulative_counts(combined_df, sum3, 'reward_vol')
-        #except: pass
-        #sum3.set_title('Water delivered by day')
-
-        sum4 = plt.subplot(gs[6, 1])
+        sum4 = plt.subplot(gs[6:8, 1])
         self.plot_proportions_by_wait_time(sum4, combined_df, num_bins = 10)
-        sum4.set_title('High contrast outcomes by Wait Time')
+        sum4.set_title('High contrast waittime props')
+
+        sum5 = plt.subplot(gs[6, 2])
+        self.plot_weight_by_day(sum5, combined_df)
+        sum5.set_title('Weight by Day')
+
+        sum6 = plt.subplot(gs[7, 2])
+        self.plot_water_delivered_by_day(sum6, combined_df)
+        sum6.set_title('Water Delivered by Day')
+
+
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.96]) 
+        
         folder = self.params['directory']
         save_str = os.path.join(folder, 'summary_plot.png')
         plt.savefig(save_str)
@@ -202,16 +208,16 @@ class Plotter():
         ax.set_title('Outcomes for waittimes throughout session')
     
     def plot_wait_time_vs_contrast(self, ax, df):
-        # Plotting for the 'rewarded' condition in green
+        # plotting for the 'rewarded' condition in green
         ax.plot(df[df['rewarded']]['contrast'], df[df['rewarded']]['wait_time'], 'o', color=self.colors['rewarded'], label='Rewarded',alpha = 0.75)
         
-        # Plotting for the 'false_alarm' condition in orange
+        # plotting for the 'false_alarm' condition in orange
         ax.plot(df[df['false_alarm']]['contrast'], df[df['false_alarm']]['wait_time'], 'o', color=self.colors['false_alarm'], label='False Alarm', alpha = 0.75)
         
-        # Plotting for the 'lapse' condition when contrast is not 0, in red
+        # plotting for the 'lapse' condition when contrast is not 0, in red
         ax.plot(df[df['lapse']]['contrast'], df[df['lapse']]['wait_time'], 'o', color=self.colors['lapse'], label='Lapse', alpha = 0.75)
         
-        # Plotting for the 'lapse' condition when contrast is 0, in blue-green
+        # plotting for the 'lapse' condition when contrast is 0, in blue-green
         ax.plot(df[df['catch_lapse']]['contrast'], df[df['catch_lapse']]['wait_time'], 'o', color=self.colors['catch_lapse'], label='Catch Lapse',alpha = 0.75)
 
 
@@ -222,7 +228,7 @@ class Plotter():
 
 
     def plot_reaction_time_vs_starttime(self, ax, df):
-        # Filtering and plotting for the 'rewarded = True' condition in green
+        # filtering and plotting for the 'rewarded = True' condition in green
         rewarded_df = df[df['rewarded'] == True]
         ax.scatter(rewarded_df['contrast'], rewarded_df['reaction_time'], marker = '+', color=self.colors['rewarded'], label='Rewarded')
 
@@ -236,11 +242,11 @@ class Plotter():
         ax.legend()
 
     def plot_recent_trial_outcomes(self, ax, df):
-        # Assuming df is sorted in ascending order of trials
+        
         if df.shape[0] > 5:
-            last_trials = df.tail(5)  # Get the last 5 trials
+            last_trials = df.tail(5)  # get the last 5 trials
             
-            # Define outcomes and corresponding colors and markers
+            # define outcomes and corresponding colors and markers
             outcomes = ['rewarded', 'false_alarm', 'lapse', 'catch_lapse']
             colors = {'rewarded': self.colors['rewarded'], 'false_alarm': self.colors['false_alarm'], 'lapse': self.colors['lapse'], 'catch_lapse': self.colors['catch_lapse']}
             markers = {'rewarded': 'o', 'false_alarm': 'o', 'lapse': 'o', 'catch_lapse': 'o'}
@@ -253,15 +259,15 @@ class Plotter():
             for i, trial in enumerate(last_trials.itertuples(index=True), 1):
                 for outcome in outcomes:
                     if getattr(trial, outcome):  # If the outcome is True for this trial
-                        # Plot with specific color and marker
-                        # Adjusting the scatter plot position so the most recent is on the right
+                        # plot with specific color and marker
+                        # adjusting the scatter plot position so the most recent is on the right
                         ax.scatter(i, y_value, s=marker_size, color=colors[outcome], label=outcome, marker=markers[outcome])
 
-            # Simplify the plot
-            ax.set_yticks([])  # Hide y-axis as it's not meaningful
-            # Set x-ticks to correspond to the last 5 trials, with the most recent on the right
+            # simplify the plot
+            ax.set_yticks([])  # hide y-axis as it's not meaningful
+            # set x-ticks to correspond to the last 5 trials, with the most recent on the right
             ax.set_xticks(range(1, 6))  
-            # Adjust x-tick labels so the most recent trial is labeled "1" and appears on the right
+            # adjust x-tick labels so the most recent trial is labeled "1" and appears on the right
             ax.set_xticklabels(range(5, 0, -1))  
             ax.set_xlabel('Trials from Most Recent')
             
@@ -273,18 +279,18 @@ class Plotter():
             ax.set_title('Outcomes of the Last 5 Trials')
             
     def plot_outcomes_by_contrast(self, ax, df):
-        # Convert outcomes to boolean for easy summing/counting
+        # convert outcomes to boolean for easy summing/counting
         df_ = df.copy()
         df_['false_alarm'] = df['false_alarm'] & ~df['reaction_time'].isna()
         
-        # Group by 'contrast' and calculate the sum of each outcome
+        # group by 'contrast' and calculate the sum of each outcome
         grouped = df_.groupby('contrast')[['rewarded', 'false_alarm', 'lapse', 'catch_lapse']].sum()
 
-        # Filter contrasts with more than 10 trials
+        # filter contrasts with more than 10 trials
         total_trials = grouped.sum(axis=1)
         grouped_filtered = grouped[total_trials > 10]
 
-        # Calculate proportions for the filtered DataFrame
+        # calculate proportions for the filtered DataFrame
         for col in ['rewarded', 'false_alarm', 'lapse', 'catch_lapse']:
             df_[col] = df_[col].astype(bool)
         proportions = {
@@ -296,15 +302,15 @@ class Plotter():
         contrast_index = []
         for contrast, group in grouped_filtered.groupby(level=0):
             if contrast == 0:
-                # Include 'false_alarm' and 'catch_lapse' for 0 contrast
+                # include 'false_alarm' and 'catch_lapse' for 0 contrast
                 outcomes = group[['false_alarm', 'catch_lapse']].sum()
-                outcomes['rewarded'] = 0  # Set 'rewarded' to 0 for 0 contrast
-                outcomes['lapse'] = 0  # Set 'lapse' to 0 for 0 contrast
+                outcomes['rewarded'] = 0  # set 'rewarded' to 0 for 0 contrast
+                outcomes['lapse'] = 0  # set 'lapse' to 0 for 0 contrast
             else:
-                # Include only 'rewarded' and 'lapse' for other contrasts
+                # include only 'rewarded' and 'lapse' for other contrasts
                 outcomes = group[['rewarded', 'lapse']].sum()
-                outcomes['false_alarm'] = 0  # Set 'false_alarm' to 0 for other contrasts
-                outcomes['catch_lapse'] = 0  # Set 'catch_lapse' to 0 for other contrasts
+                outcomes['false_alarm'] = 0  # set 'false_alarm' to 0 for other contrasts
+                outcomes['catch_lapse'] = 0  # set 'catch_lapse' to 0 for other contrasts
 
             total = outcomes.sum()
             if total > 0:
@@ -315,10 +321,10 @@ class Plotter():
                     proportions[outcome].append(0)
             contrast_index.append(contrast)
 
-        # Create a DataFrame from the proportions
+        # create a DataFrame from the proportions
         proportions_df = pd.DataFrame(proportions, index=contrast_index)
 
-        # Plot
+        # plot
         colors = [self.colors['rewarded'], self.colors['false_alarm'], self.colors['lapse'], self.colors['catch_lapse']]
         proportions_df.plot(kind='bar', stacked=True, color=colors, ax=ax)
 
@@ -326,10 +332,10 @@ class Plotter():
         ax.set_ylabel('Proportion')
         ax.set_title('Detection Curves for Recent Session')
 
-        # Hide the legend
+        # hide the legend
         ax.get_legend().set_visible(False)
 
-        # Annotate with raw numbers
+        # annotate with raw numbers
         for i, contrast in enumerate(proportions_df.index):
             cumulative_height = 0
             for outcome in ['rewarded', 'false_alarm', 'lapse', 'catch_lapse']:
@@ -343,7 +349,7 @@ class Plotter():
 
 
     def plot_cumulative_counts(self, combined_df, ax, measure):
-        # Sort the DataFrame by session to ensure cumulative counts are correct
+        # sort the DataFrame by session to ensure cumulative counts are correct
         df = combined_df.copy()
         df = df.sort_values(by='day')
         
@@ -354,12 +360,12 @@ class Plotter():
             'catch_lapse': '#266dd3'
         }
         
-        # Assign color for the current measure or use a default palette
+        # assign color for the current measure or use a default palette
         if measure in colors:
             color = colors[measure]
 
 
-        # Calculate and plot cumulative counts or ratios
+        # calculate and plot cumulative counts or ratios
         if measure == 'reward_vol':
             df['total_volume_rewarded'] = df[df['rewarded'] == 1].groupby('day')['reward_volume'].cumsum()
             sns.lineplot(data=df[df['rewarded'] == 1], x='day', y='total_volume_rewarded', ax=ax, marker='o')
@@ -378,7 +384,7 @@ class Plotter():
         ax.set_ylabel('counts')
         ax.set_title(f'Cumulative {measure.capitalize()} Across Days')
 
-        # Rotate the x-axis labels for better readability
+        # rotate the x-axis labels for better readability
         plt.setp(ax.get_xticklabels(), rotation=45)
         plt.tight_layout()
 
@@ -386,7 +392,7 @@ class Plotter():
         df = combined_df.copy()
         df.sort_values('session', inplace=True)
 
-        # Define colors for the various measures
+        # define colors for the various measures
         colors = {
             'rewarded': '#6a8e7f',
             'false_alarm': '#f0b67f',
@@ -394,17 +400,17 @@ class Plotter():
             'catch_lapse': '#266dd3'
         }
         
-        # Calculate cumulative counts
+        # calculate cumulative counts
         df['rewarded_cumulative'] = df.groupby('day')['rewarded'].cumsum()
         df['false_alarm_cumulative'] = df.groupby('day')['false_alarm'].cumsum()
         df['lapse_cumulative'] = df.groupby('day')['lapse'].cumsum()
         
-        # Plot cumulative counts for rewards, catches, and false alarms
+        # plot cumulative counts for rewards, catches, and false alarms
         sns.lineplot(data=df, x='day', y='rewarded_cumulative', ax=ax1, marker='o', color=colors['rewarded'], label='Rewards')
         sns.lineplot(data=df, x='day', y='false_alarm_cumulative', ax=ax1, marker='o', color=colors['false_alarm'], label='False Alarms')
         sns.lineplot(data=df, x='day', y='lapse_cumulative', ax=ax1, marker='o', color=colors['lapse'], label='Lapses')
         
-        # Create a second y-axis for the FA/reward ratio
+        # create a second y-axis for the FA/reward ratio
         ax2 = ax1.twinx()
         df['false_alarm_reward_ratio'] = df['false_alarm_cumulative'] / df['rewarded_cumulative'].replace(0, np.nan)
         sns.lineplot(data=df, x='day', y='false_alarm_reward_ratio', ax=ax2, marker='o', color=colors['catch_lapse'], label='FA/Reward Ratio')
@@ -425,131 +431,132 @@ class Plotter():
 
         plt.tight_layout()
 
-    def plot_detection_curve_percent_correct(self, ax, combined_df_):
-        combined_df = combined_df_.copy()
-        # Handle zero contrast according to the specified logic
+    def plot_detection_curve_percent_correct(self, ax, combined_df):
+        combined_df = combined_df.copy()
+        
+        # handle zero contrast trials (need to look at false alarms after "stim on")
         combined_df.loc[combined_df['contrast'] == 0, 'false_alarm'] = \
             combined_df['false_alarm'] & ~combined_df['reaction_time'].isna()
         
-        # Calculate percent correct for nonzero contrasts
+        # calculate percent correct for nonzero contrasts
         non_zero_contrast = combined_df[combined_df['contrast'] != 0]
         percent_correct_nonzero = non_zero_contrast.groupby(['day', 'contrast']).apply(
             lambda df: df['rewarded'].sum() / (df['rewarded'].sum() + df['lapse'].sum())
         ).reset_index(name='percent_correct')
         
-        # Calculate percent correct for zero contrast
+        # calculate percent correct for zero contrast
         zero_contrast = combined_df[combined_df['contrast'] == 0]
         percent_correct_zero = zero_contrast.groupby('day').apply(
             lambda df: df['false_alarm'].sum() / (df['false_alarm'].sum() + df['catch_lapse'].sum())
         ).reset_index(name='percent_correct')
         percent_correct_zero['contrast'] = 0  # Add contrast column to keep consistency
         
-        # Combine both DataFrames
+        # combine both DataFrames
         percent_correct = pd.concat([percent_correct_nonzero, percent_correct_zero])
         percent_correct.reset_index(drop=True, inplace=True)
         
-        # Calculate mean and SEM of percent correct by contrast
+        # calculate mean and SEM of percent correct by contrast
         summary_stats = percent_correct.groupby('contrast')['percent_correct'].agg(['mean', 'sem']).reset_index()
         
-        # Generate session colors, ensuring there is a unique color for each session
+        # generate session colors, ensuring there is a unique color for each session
         unique_sessions = percent_correct['day'].unique()
         session_colors = sns.cubehelix_palette(n_colors=len(unique_sessions), start=2.8, rot=.1, light=0.85, dark=0.35)
         color_dict = dict(zip(unique_sessions, session_colors))
 
-        # Bar plot for mean percent correct with confidence interval (CI) for SEM
+        # bar plot for mean percent correct with confidence interval (CI) for SEM
         sns.barplot(x='contrast', y='mean', data=summary_stats, color='gray', capsize=1, ax=ax)
 
-        # Add jitter and use session order for the hue to get a gradient effect
+        # add jitter and use session order for the hue to get a gradient effect
         sns.stripplot(x='contrast', y='percent_correct', data=percent_correct, 
                    jitter=0.20, hue='day', palette=color_dict, size=8, ax=ax, dodge=False)
 
-        # Convert contrast to string to avoid numerical spacing on x-axis
+        # convert contrast to string to avoid numerical spacing on x-axis
         ax.set_xticklabels(summary_stats['contrast'].astype(str), rotation=90)
 
         ax.set_xlabel('Contrast')
         ax.set_ylabel('Percent Correct')
-        ax.set_title('Percent Correct by Contrast Across Sessions')
-
-
-    def plot_percent_correct_heatmap(self, ax, combined_df_):
-        combined_df = combined_df_.copy()
         
-        # Handle zero contrast according to the specified logic
+
+
+    def plot_percent_correct_heatmap(self, ax, combined_df):
+        combined_df = combined_df.copy()
+        
+        # handle zero contrast uniquely 
         combined_df.loc[combined_df['contrast'] == 0, 'false_alarm'] = \
             combined_df['false_alarm'] & ~combined_df['reaction_time'].isna()
         
-        # Calculate percent correct for nonzero contrasts
+        # calculate percent correct for nonzero contrasts
         non_zero_contrast = combined_df[combined_df['contrast'] != 0]
         percent_correct_nonzero = non_zero_contrast.groupby(['day', 'contrast']).apply(
             lambda df: df['rewarded'].sum() / (df['rewarded'].sum() + df['lapse'].sum())
         ).reset_index(name='percent_correct')
         
-        # Calculate percent correct for zero contrast
+        # calculate percent correct for zero contrast
         zero_contrast = combined_df[combined_df['contrast'] == 0]
         percent_correct_zero = zero_contrast.groupby('day').apply(
             lambda df: df['false_alarm'].sum() / (df['false_alarm'].sum() + df['catch_lapse'].sum())
         ).reset_index(name='percent_correct')
         percent_correct_zero['contrast'] = 0  # Add contrast column to keep consistency
         
-        # Combine both DataFrames
+        # combine dfs
         percent_correct = pd.concat([percent_correct_nonzero, percent_correct_zero])
         percent_correct.reset_index(drop=True, inplace=True)
         
-        # Calculate mean and SEM of percent correct by contrast
+        # calculate mean and SEM of percent correct by contrast
         summary_stats = percent_correct.groupby('contrast')['percent_correct'].agg(['mean', 'sem']).reset_index()
-
-        # Combine both DataFrames
-        percent_correct = pd.concat([percent_correct_nonzero, percent_correct_zero])
-        percent_correct.reset_index(drop=True, inplace=True)
         
-        # Pivot the DataFrame to get 'day' on the y-axis and 'contrast' on the x-axis
+        # pivot the DataFrame to get 'day' on the y-axis and 'contrast' on the x-axis
         heatmap_data = percent_correct.pivot(index="contrast", columns="day", values="percent_correct")
         
-        # Reverse the order of the rows to have the top of the y-axis as older and bottom as newer
+        # reverse the order of the rows to have the top of the y-axis as older and bottom as newer
         heatmap_data = heatmap_data.iloc[::-1]
 
-        # Plot the heatmap
+        # plot the heatmap
         sns.heatmap(heatmap_data, ax=ax, annot=True, fmt=".2f", cmap="RdYlGn", cbar_kws={'label': 'Percent Correct'})
 
         ax.set_xlabel('Day')
         ax.set_ylabel('Contrast')
         ax.set_title('Percent Correct by Contrast Across Days')
 
-
+        plt.setp(ax.get_xticklabels(), rotation=45)
         plt.tight_layout()
     
-    def plot_proportions_by_wait_time(self, ax, df, num_bins=20):
+    def plot_proportions_by_wait_time(self, ax, combined_df, num_bins=20):
         # Filter for high contrast trials
-        high_contrast_df = df[df['contrast'] >= 32].copy()
+        high_contrast_df = combined_df[combined_df['contrast'] >= 32].copy()
         
         # Define bins for wait times
         wait_time_bins = np.histogram(high_contrast_df['wait_time'], bins=num_bins)[1]
-
-        # Bin the wait times
-        high_contrast_df['wait_time_bin'] = pd.cut(high_contrast_df['wait_time'], bins=wait_time_bins)
-
+        
+        # Bin the wait times with precision to ensure alignment
+        high_contrast_df['wait_time_bin'] = pd.cut(high_contrast_df['wait_time'], bins=wait_time_bins, precision=1)
+        
         # Calculate proportions
         proportions_df = (high_contrast_df.groupby('wait_time_bin')['outcome']
                         .value_counts(normalize=True)
                         .rename('proportion')
                         .reset_index())
-
+        
         # Pivot for plotting
         proportions_pivot = proportions_df.pivot(index='wait_time_bin', columns='outcome', values='proportion').fillna(0)
-
+        
         # Plot a stacked bar chart
-        proportions_pivot.plot(kind='bar', stacked=True, ax=ax,
+        bar_plot = proportions_pivot.plot(kind='bar', stacked=True, ax=ax,
                             color=['#f0b67f', '#fe6b64', '#6a8e7f'])
-
+        
         # Set axis labels and title
         ax.set_xlabel('Wait Time Bins')
         ax.set_ylabel('Proportion of Outcomes')
         ax.set_title('Proportions of Outcomes by Wait Time Bins for High Contrast Trials')
         
+        # Remove default legend
         ax.legend_.remove()
-
-        # Rotate x-axis labels for better readability
-        plt.setp(ax.get_xticklabels(), rotation=45)
+        
+        # Customize x-axis labels to round to nearest 0.1
+        rounded_labels = [f'{interval.left:.1f} - {interval.right:.1f}' for interval in proportions_pivot.index]
+        bar_plot.set_xticklabels(rounded_labels, rotation=45)  # Assign labels directly to the bar plot
+        
+        # Ensure layout fits the plot
         plt.tight_layout()
 
     def plot_mean_wait_time_by_day(self,ax,combined_df):
@@ -586,12 +593,30 @@ class Plotter():
         # get the weights for each day (each day will have redundant information)
         # deal with np.nans from when i previously didn't record weights
         # plot line graph 
-        pass
+        df = combined_df.copy()
+        df = df.dropna(subset=['weight'])
+        df = df.sort_values('day')
+        sns.lineplot(data=df, x='day', y='weight', ax=ax, marker='o')
+        ax.set_xlabel('')
+        ax.set_ylabel('Weight (g)')
+        ax.set_title('Weight by Day')
+        plt.setp(ax.get_xticklabels(), rotation=45)
     
     def plot_water_delivered_by_day(self, ax, combined_df):
-        # sum the water delivered for each day (sum of each row by day)
-        # plot by each day
-        pass
+        # Filter only the rewarded trials before any processing
+        rewarded_df = combined_df[combined_df['rewarded'] == True]
+
+        # Calculate the total water delivered per day and remove days with zero volume
+        daily_water = rewarded_df.groupby('day')['reward_volume'].sum()
+        daily_water = daily_water[daily_water > 0]
+
+        # Plot the sum of reward volume per day
+        sns.lineplot(data=daily_water, ax=ax, marker='o')
+        ax.set_title('Water Delivered')
+        ax.set_xlabel('Day')
+        ax.set_ylabel('time sol open (ms)')
+        plt.setp(ax.get_xticklabels(), rotation=45)
+        
 
     def load_and_combine_dataframes(self, base_path = None):
         if base_path is None:

@@ -9,6 +9,7 @@ class Params:
         self.weight = weight
         self.setup_directories()
         self.init_task_variables()
+        self.load_previous_params()
         #camera
         #load previous params
 
@@ -41,13 +42,13 @@ class Params:
         self.spout_position = 'up' #up is lickable, down is unlickable
 
         # stimuli information for data frame (rest is stored in stimuli class)
-        self.stim_contrast = None 
+        self.stim_contrast = None # contrast of last trial
         self.orientation = None # not currently implemented
         self.catch = None # catch trials are where contrast is 0
         self.PAUSED = False
         
-        #to be able to modulate
-        self.reward_vol = 30 # time solenoid is open in ms -- need to titrate for exact weights.. but 50ms seems like a good starting spot
+        # DEFAULT PARAMS (modulate through GUI)
+        self.reward_vol = 80 # time solenoid is open in ms -- need to titrate for exact weights.. but 50ms seems like a good starting spot
         self.min_wait_time = 1 # lower number in np.randfloat
         self.max_wait_time = 3 # upper number in np.randfloat
         self.wait_time = None # how long after trial starts before stim is on
@@ -59,8 +60,10 @@ class Params:
         self.autoreward = False
         self.shaping = False
         self.buzzer_volume = 0.05
+        
+        self.contrasts = None #a list naturally, but defaults to none so that this can be set by the stimulus class if not loaded by previous params
 
-        #buttons = [self.shaping, self.autoreward] #toggles
+    
     
         #dataframe to be saved
         self.trials_df = pd.DataFrame(columns=['trial_number', 
@@ -71,6 +74,42 @@ class Params:
                                                 'trial_start_time','stim_on_time', 'reaction_time',
                                                 'autoreward', 'shaping', 'reward_volume', 'buzzer_volume'
                                                 ])
+    
+    def load_previous_params(self):
+        ''' Load previous parameters from the last session's json file. '''
+        try:
+            # list directories, sorted by date including today
+            sessions = os.listdir(os.path.dirname(self.directory))
+            sessions.sort()
+            
+            # Index -2 should be the previous session 
+            self.yesterday_directory = sessions[-2]
+            
+            # path to the previous params.json
+            params_path = os.path.join(os.path.dirname(self.directory), self.yesterday_directory, 'params.json')
+            
+            # open the json file and load parameters
+            with open(params_path, 'r') as file:
+                self.yesterday = json.load(file)
+                
+                # load parameters with fallback to defaults if not present
+                self.reward_vol = self.yesterday.get('reward_vol', self.reward_vol)
+                self.min_wait_time = self.yesterday.get('min_wait_time', self.min_wait_time)
+                self.max_wait_time = self.yesterday.get('max_wait_time', self.max_wait_time)
+                self.wait_time = self.yesterday.get('wait_time', self.wait_time)
+                self.quiet_period = self.yesterday.get('quiet_period', self.quiet_period)
+                self.stim_duration = self.yesterday.get('stim_duration', self.stim_duration)
+                self.catch_frequency = self.yesterday.get('catch_frequency', self.catch_frequency)
+                self.FA_penalty = self.yesterday.get('FA_penalty', self.FA_penalty)
+                self.timeout_duration = self.yesterday.get('timeout_duration', self.timeout_duration)
+                self.autoreward = self.yesterday.get('autoreward', self.autoreward)
+                self.shaping = self.yesterday.get('shaping', self.shaping)
+                self.buzzer_volume = self.yesterday.get('buzzer_volume', self.buzzer_volume)
+                self.contrasts = self.yesterday.get('contrasts', None)
+
+        except Exception as e:
+            print(f"Failed to load previous parameters: {e}")
+    
     def update_df(self): # called after every trial to update the DF
         self.false_alarm = self.trial_outcome == 'False Alarm'
         self.rewarded = self.trial_outcome == 'Reward'
