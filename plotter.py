@@ -646,9 +646,9 @@ class Plotter():
                 params = json.load(file)
             params_list.append(params)
             
-        # Get weight if available, or use np.nan if not
-        weight = float(params.get('weight', np.nan))
-        df['weight'] = weight 
+            # Get weight if available, or use np.nan if not
+            weight = float(params.get('weight', np.nan))
+            df['weight'] = weight 
 
         # Combine all DataFrames into one
         combined_df = pd.concat(all_data, ignore_index=True)
