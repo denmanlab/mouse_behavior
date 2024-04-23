@@ -647,6 +647,9 @@ class Plotter():
             params_list.append(params)
             
             # Get weight if available, or use np.nan if not
+            #check if params is a string, if so convert to a dictionary
+            if isinstance(params, str):
+                params = json.loads(params)
             weight = float(params.get('weight', np.nan))
             df['weight'] = weight 
 

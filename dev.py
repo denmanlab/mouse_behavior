@@ -189,10 +189,17 @@ def on_draw():
         imgui.pop_style_color(1)
 
 
-    button_color = (0, 0.5, 0) if params.PAUSED else (0.5, 0, 0) # Dark green if playing, dark red if paused
+    button_color = (0.5, 0, 0) if params.PAUSED else (0, 0.5, 0) # Dark green if playing, dark red if paused
     imgui.push_style_color(imgui.COLOR_BUTTON, *button_color)
     if imgui.button(f"Pause Button: {'PAUSED' if params.PAUSED else 'Playing'}"):
-        pause(params)
+        if params.PAUSED:
+            unpause(params)
+            print('Unpaused')
+        else:
+            pause(params)
+            print('Paused')
+
+    imgui.pop_style_color(1)
     
     imgui.same_line()
     button_color = (0, 0.5, 0) if params.shaping else (0.5, 0, 0) # Dark green if shaping, dark red if not
@@ -201,6 +208,8 @@ def on_draw():
         params.shaping = not params.shaping  # Toggle the shaping state
         print(f'Shaping: {"On" if params.shaping else "Off"}')
 
+    imgui.pop_style_color(1)
+
     # autoreward
     imgui.same_line()
     button_color = (0, 0.5, 0) if params.autoreward else (0.5, 0, 0) # Dark green if autoreward, dark red if not
@@ -208,6 +217,9 @@ def on_draw():
     if imgui.button(f"AutoReward: {'True' if params.autoreward else 'False'}"):
         params.autoreward = not params.autoreward  # Toggle the autoreward state
         print(f'AutoReward: {"On" if params.autoreward else "Off"}')
+
+    imgui.pop_style_color(1)
+
     imgui.end()
     imgui.render()
     imgui_renderer.render(imgui.get_draw_data())
