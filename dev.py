@@ -110,9 +110,9 @@ def on_draw():
         print(f'Maximum Wait Time: {params.max_wait_time}')
 
     # Slider for Quiet Period (ITI with no licking)
-    changed_quiet_period, new_quiet_period = imgui.slider_int("Quiet Period (ITI w no licking)", 
-                                                              params.quiet_period, 1, 30, 
-                                                              "%.0f", imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
+    changed_quiet_period, new_quiet_period = imgui.slider_float("Quiet Period (ITI w no licking)", 
+                                                              params.quiet_period, 1.0, 5.0, 
+                                                              "%.1f", imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
     if changed_quiet_period:
         params.quiet_period = new_quiet_period
         print(f'Quiet Period: {params.quiet_period}')
@@ -299,7 +299,7 @@ def manual_stim(params):
         resume = False
     select_stimuli(params, stimuli)
     params.stimulus_visible = True
-    schedule_once(scheduled_reward, 0.25, params, task_io)
+    schedule_once(scheduled_reward, 0.1, params, task_io)
     # Schedule to turn the stimulus off after 1 second
     schedule_once(hide_stimulus, params.stim_duration, params)
     if resume:
@@ -351,7 +351,7 @@ def start_trial(dt, params):
     params.stim_on_time = timer.time #pyglet.clock.get_default().time()
     print(f"Stimulus Contrast {params.stim_contrast} on")
     if params.autoreward == True and params.stim_contrast != 0:
-        deliver_reward(params, task_io)
+        schedule_once(scheduled_reward, 0.25, params, task_io)
     schedule_once(end_trial, params.stim_duration, params)
 
 def process_lick(params): #processes lick events detected by read_lickometer for task relevancy

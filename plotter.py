@@ -76,59 +76,97 @@ class Plotter():
         ## daily plots! 5 plots (2 left column, 3 right column)
         # First column plots
         ax0 = plt.subplot(gs[0:2, 0])  # This plot spans the first two rows of the first column
-        self.plot_outcomes_by_contrast(ax0, df)
+        try:
+            self.plot_outcomes_by_contrast(ax0, df)
+        except:
+            print('outcomes by contrast did not work')
         
         ax1 = plt.subplot(gs[2, 0])  
-        self.plot_wait_time_vs_starttime(ax1, df)
-
+        try:
+            self.plot_wait_time_vs_starttime(ax1, df)
+        except:
+            print('wait times not working')
         # Second column plots,       
         ax2 = plt.subplot(gs[0, 1:3])
-        self.plot_rolling_proportion(ax2, df)
+        try:
+            self.plot_rolling_proportion(ax2, df)
+        except:
+            print('rolling distributions not working')
 
         ax3 = plt.subplot(gs[1:3, 1]) 
-        self.plot_cumulative_count(ax3, df)
-        ax3.legend_.remove()
-
+        try: 
+            self.plot_cumulative_count(ax3, df)
+            ax3.legend_.remove()
+        except:
+            print('cumulative counts did not work')
         ax4 = plt.subplot(gs[1:3, 2])  
-        self.plot_reaction_time_vs_starttime(ax4, df)
+        try:
+            self.plot_reaction_time_vs_starttime(ax4, df)
+        except:
+            print('reaction time no work')
         ax4.legend_.remove()
 
         
         ## Summary of recent sessions (currently 10)
         combined_df = self.load_and_combine_dataframes()
         sum0 = plt.subplot(gs[4:6,0])
-        self.plot_detection_curve_percent_correct(sum0, combined_df)
-        sum0.set_title('Averaged detection curve')
-        sum0.legend_.remove()
+        try:
+            self.plot_detection_curve_percent_correct(sum0, combined_df)
+            sum0.set_title('Averaged detection curve')
+            sum0.legend_.remove()
+        except:
+            print('detection curve did not plot')
+        
         sum05 = plt.subplot(gs[6:8,0])
-        self.plot_percent_correct_heatmap(sum05, combined_df)
+        try:
+            self.plot_percent_correct_heatmap(sum05, combined_df)
+        except:
+            print('percent correct by day did not owkr')
         sum05.set_title('% Correct Heatmap by day')
         
         
         sum1 = plt.subplot(gs[4, 1:3])
-        self.plot_cumulative_counts(combined_df, sum1, 'rewarded')
-        self.plot_cumulative_counts(combined_df, sum1, 'false_alarm')
-        self.plot_cumulative_counts(combined_df, sum1, 'lapse')
+        try: 
+            self.plot_cumulative_counts(combined_df, sum1, 'rewarded')
+            self.plot_cumulative_counts(combined_df, sum1, 'false_alarm')
+            self.plot_cumulative_counts(combined_df, sum1, 'lapse')
+        except:
+            print('Oops, Cumulative Outcomes by Day plot didnt work.')
         sum1.set_title('Cumulative Outcomes by Day')
         
         sum2 = plt.subplot(gs[5, 1])
-        self.plot_cumulative_counts(combined_df, sum2, 'false_alarm/rewarded')
+        try:
+            self.plot_cumulative_counts(combined_df, sum2, 'false_alarm/rewarded')
+        except:
+            print('false alarm rate didnt work')
         sum2.set_title('False Alarm Rate')
 
         sum2half = plt.subplot(gs[5,2])
-        self.plot_mean_wait_time_by_day(sum2half, combined_df)
+        try:
+            self.plot_mean_wait_time_by_day(sum2half, combined_df)
+        except:
+            print('mean wait time by day didnt work')
         sum2half.set_title('Mean Wait Time by Day')
 
         sum4 = plt.subplot(gs[6:8, 1])
-        self.plot_proportions_by_wait_time(sum4, combined_df, num_bins = 10)
+        try:
+            self.plot_proportions_by_wait_time(sum4, combined_df, num_bins = 10)
+        except:
+            print('no high contrast waittime proportions')
         sum4.set_title('High contrast waittime props')
 
         sum5 = plt.subplot(gs[6, 2])
-        self.plot_weight_by_day(sum5, combined_df)
+        try:
+            self.plot_weight_by_day(sum5, combined_df)
+        except:
+            print('weight by day didnt plot')
         sum5.set_title('Weight by Day')
 
         sum6 = plt.subplot(gs[7, 2])
-        self.plot_water_delivered_by_day(sum6, combined_df)
+        try:
+            self.plot_water_delivered_by_day(sum6, combined_df)
+        except:
+            print('water delivery by day no work')
         sum6.set_title('Water Delivered by Day')
 
 

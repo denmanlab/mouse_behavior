@@ -52,7 +52,7 @@ class Params:
         self.min_wait_time = 1 # lower number in np.randfloat
         self.max_wait_time = 3 # upper number in np.randfloat
         self.wait_time = None # how long after trial starts before stim is on
-        self.quiet_period = 1 #time required of no licking between trials
+        self.quiet_period = 1.0 #time required of no licking between trials
         self.stim_duration = 1.5 # how long (s) that the stimuli is on
         self.catch_frequency = 0 # number of catch trials to append to the stimuli list
         self.FA_penalty = 3  # number of FAs in a row before timeout 
