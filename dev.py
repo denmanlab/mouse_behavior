@@ -361,6 +361,7 @@ def process_lick(params): #processes lick events detected by read_lickometer for
             params.trial_outcome = "False Alarm"
             params.rewarded_lick_time = None 
             params.stimulus_visible = False
+            params.FA_lick_time = timer.time
             unschedule(start_trial)
             print("False Alarm (FA): Lick detected before stimulus.")
             unschedule(end_trial)

@@ -44,7 +44,8 @@ class Plotter():
                         'rewarded': '#6a8e7f',
                         'false_alarm': '#f0b67f',
                         'lapse': '#fe6b64',
-                        'catch_lapse': '#266dd3'
+                        'catch_lapse': '#266dd3',
+                        'wait_time': '#03fcf8',
                     }
         plt.style.use(['dark_background', 'seaborn-talk'])
     
@@ -241,8 +242,13 @@ class Plotter():
                 color=self.colors['lapse'], label='lapse', markersize = 6)
         ax.plot(df[df['catch_lapse']]['trial_start_time'], df[df['catch_lapse']]['wait_time'], 'o', 
                 color=self.colors['catch_lapse'], label='catch lapse', markersize = 6)
+        ax.plot(df[df['false_alarm']]['trial_start_time'], df[df['false_alarm']]['reaction_time'], 'X', 
+                color=self.colors['wait_time'], label='false alarm wait time', markersize = 6)
+        ax.twinx().spines['right'].set_visible(False)
+        ax.twinx().set_ylabel('actual wait time on FA')
+        ax.twinx().yaxis.label.set_color(self.colors['wait_time'])
         ax.set_xlabel('seconds')
-        ax.set_ylabel('wait time')
+        ax.set_ylabel('target wait time')
         ax.set_title('Outcomes for waittimes throughout session')
     
     def plot_wait_time_vs_contrast(self, ax, df):

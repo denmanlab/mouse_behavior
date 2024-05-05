@@ -37,6 +37,7 @@ class Params:
         
         self.last_lick_time = 0 # last lick time -- used to check quiet period
         self.lick_times = [] # list for full lick times 
+        self.FA_lick_time = 0 # for plotting actual wait tmie of FAs 
         self.current_stim = None
         
         self.spout_position = 'up' #up is lickable, down is unlickable
@@ -126,7 +127,7 @@ class Params:
         elif self.catch and self.rewarded_lick_time is not None: # if the FA happened after stim-on time
             reaction_time = self.rewarded_lick_time - self.stim_on_time #rewarded lick time is bad name, lick was not rewarded but oh well. 
         else:
-            reaction_time = None
+            reaction_time = self.FA_lick_time - self.trial_start_time
         
         new_index = len(self.trials_df)
         # Add a new row at the end of the DataFrame
