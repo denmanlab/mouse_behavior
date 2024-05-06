@@ -189,7 +189,8 @@ class Plotter():
         if df_.shape[0] > 0:
             self.plot_wait_time_vs_starttime(ax[1][0], df)
             self.plot_wait_time_vs_contrast(ax[1][1], df)
-        
+
+         
         self.plot_reaction_time_vs_starttime(ax[2][0], df)
         self.plot_recent_trial_outcomes(ax[2][1], df)
 
@@ -253,22 +254,26 @@ class Plotter():
     
     def plot_wait_time_vs_contrast(self, ax, df):
         # plotting for the 'rewarded' condition in green
-        ax.plot(df[df['rewarded']]['contrast'], df[df['rewarded']]['wait_time'], 'o', color=self.colors['rewarded'], label='Rewarded',alpha = 0.75)
+        ax.plot(df[df['rewarded']]['contrast'], df[df['rewarded']]['wait_time'], 'o', 
+                color=self.colors['rewarded'], label='Rewarded',alpha = 0.75, markersize = 6)
         
         # plotting for the 'false_alarm' condition in orange
-        ax.plot(df[df['false_alarm']]['contrast'], df[df['false_alarm']]['wait_time'], 'o', color=self.colors['false_alarm'], label='False Alarm', alpha = 0.75)
+        ax.plot(df[df['false_alarm']]['contrast'], df[df['false_alarm']]['wait_time'], 'X', 
+                color=self.colors['false_alarm'], label='False Alarm', alpha = 0.75, markersize = 6)
         
         # plotting for the 'lapse' condition when contrast is not 0, in red
-        ax.plot(df[df['lapse']]['contrast'], df[df['lapse']]['wait_time'], 'o', color=self.colors['lapse'], label='Lapse', alpha = 0.75)
+        ax.plot(df[df['lapse']]['contrast'], df[df['lapse']]['wait_time'], 'X', 
+                color=self.colors['lapse'], label='Lapse', alpha = 0.75, markersize = 6)
         
         # plotting for the 'lapse' condition when contrast is 0, in blue-green
-        ax.plot(df[df['catch_lapse']]['contrast'], df[df['catch_lapse']]['wait_time'], 'o', color=self.colors['catch_lapse'], label='Catch Lapse',alpha = 0.75)
+        ax.plot(df[df['catch_lapse']]['contrast'], df[df['catch_lapse']]['wait_time'], 'o', 
+                color=self.colors['catch_lapse'], label='Catch Lapse',alpha = 0.75, markersize = 6)
 
 
         ax.set_xlabel('Contrast')
         ax.set_ylabel('Wait Time')
         ax.set_title('Wait Time by Contrast')
-        ax.legend()
+        #ax.legend()
 
 
     def plot_reaction_time_vs_starttime(self, ax, df):
@@ -293,7 +298,7 @@ class Plotter():
             # define outcomes and corresponding colors and markers
             outcomes = ['rewarded', 'false_alarm', 'lapse', 'catch_lapse']
             colors = {'rewarded': self.colors['rewarded'], 'false_alarm': self.colors['false_alarm'], 'lapse': self.colors['lapse'], 'catch_lapse': self.colors['catch_lapse']}
-            markers = {'rewarded': 'o', 'false_alarm': 'o', 'lapse': 'o', 'catch_lapse': 'o'}
+            markers = {'rewarded': 'o', 'false_alarm': 'X', 'lapse': 'X', 'catch_lapse': 'o'}
             marker_size = 500  # Large marker size for visibility
             
             # The y-value is arbitrary since it doesn't matter for this visualization

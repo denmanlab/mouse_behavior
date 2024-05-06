@@ -1,4 +1,5 @@
 import pandas as pd 
+import numpy as np
 import os, json
 import datetime
 from numpy import save
@@ -39,14 +40,21 @@ class Params:
         self.lick_times = [] # list for full lick times 
         self.FA_lick_time = 0 # for plotting actual wait tmie of FAs 
         self.current_stim = None
+
+        # booleans for if visual stimuli and/or estim is included
+        self.VISUAL_INCLUDED = True
+        self.ESTIM_INCLUDED = False
         
         self.spout_position = 'up' #up is lickable, down is unlickable
 
         # stimuli information for data frame (rest is stored in stimuli class)
         self.stim_contrast = None # contrast of last trial
+        self.estim_amp = None # amplitude value for a trial
+        self.estim_params = None # these are the actual stimulator values in the form of a dictionary
         self.orientation = None # not currently implemented
         self.catch = None # catch trials are where contrast is 0
         self.PAUSED = False
+
         
         # DEFAULT PARAMS (modulate through GUI)
         self.reward_vol = 80 # time solenoid is open in ms -- need to titrate for exact weights.. but 50ms seems like a good starting spot
@@ -62,13 +70,16 @@ class Params:
         self.shaping = False
         self.buzzer_volume = 0.05
         
-        self.contrasts = None #a list naturally, but defaults to none so that this can be set by the stimulus class if not loaded by previous params
-
+        self.contrasts = [] #a list naturally, but defaults to none so that this can be set by the stimulus class if not loaded by previous params
+        self.estim_amps = []
     
     
         #dataframe to be saved
         self.trials_df = pd.DataFrame(columns=['trial_number', 
-                                                'contrast', 'orientation', 'catch', 
+                                                'contrast', 'orientation', 
+                                                'estim_amp',
+                                                'estim_params',
+                                                'catch', 
                                                 'outcome','false_alarm','rewarded','lapse', 'catch_lapse',
                                                 'quiet_period',
                                                 'wait_time', 
@@ -106,7 +117,8 @@ class Params:
                 self.autoreward = self.yesterday.get('autoreward', self.autoreward)
                 self.shaping = self.yesterday.get('shaping', self.shaping)
                 self.buzzer_volume = self.yesterday.get('buzzer_volume', self.buzzer_volume)
-                self.contrasts = self.yesterday.get('contrasts', None)
+                self.contrasts = self.yesterday.get('contrasts', [])
+                self.estim_amps = self.yesterday.get('estim_amps',[])
 
         except Exception as e:
             print(f"Failed to load previous parameters: {e}")
@@ -135,7 +147,9 @@ class Params:
             'trial_number': new_index + 1,
             'orientation': self.orientation,
             'catch': self.catch,
-            'contrast': self.stim_contrast,
+            'contrast': np.nan if self.stim_contrast is None else self.stim_contrast,
+            'estim_amp': np.nan if self.estim_amp is None else self.estim_amp,
+            'estim_params': self.estim_params,
             'outcome': self.trial_outcome,
             'false_alarm': self.false_alarm,
             'rewarded': self.rewarded,

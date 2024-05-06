@@ -27,3 +27,27 @@ class Stimuli():
 
         self.sprite2 = pyglet.sprite.Sprite(self.grating_image, x = 60, y = 80)
         self.sprite2.scale = 0.04
+
+        self.estim_params = {   '-5ua': -5,
+                                '5ua': 5,
+                                '15ua': 15,
+                                '-15ua': -15,
+                                '25ua': 25,
+                                '-25ua': -25,
+                                '35ua': 35,
+                                '-35ua': -35,
+                                '45ua': 45,
+                                '-45ua': -45,
+                                '55ua': 55,
+                                '-55ua': -55,
+                                '65ua': 65,
+                                '-65ua': -65,
+                                '75ua': 75,
+                                '-75ua': -75,
+                                '85ua': 85,
+                                '-85ua': -85,
+                                '95ua': 95,
+                                '-95ua': -95}
+        self.estim_amps = list(self.estim_params.keys())
+        self.estim_circle = None
+        self.estim_label = None
