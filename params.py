@@ -40,6 +40,9 @@ class Params:
         self.lick_times = [] # list for full lick times 
         self.FA_lick_time = 0 # for plotting actual wait tmie of FAs 
         self.current_stim = None
+        self.estim_times_software = [] #software copy of when software trigger sent out
+        self.estim_times_digital = [] # NIDAQ/Arduino read of digital copy from STIMULATOR!
+        self.last_estim_dig = 0
 
         # booleans for if visual stimuli and/or estim is included
         self.VISUAL_INCLUDED = True
@@ -75,7 +78,9 @@ class Params:
     
     
         #dataframe to be saved
-        self.trials_df = pd.DataFrame(columns=['trial_number', 
+        self.trials_df = pd.DataFrame(columns=[ 'trial_number', 
+                                                'ESTIM_INCLUDED',
+                                                'VISUAL_INCLUDED',
                                                 'contrast', 'orientation', 
                                                 'estim_amp',
                                                 'estim_params',
@@ -121,6 +126,7 @@ class Params:
                 self.estim_amps = self.yesterday.get('estim_amps',[])
 
         except Exception as e:
+            
             print(f"Failed to load previous parameters: {e}")
     
     def update_df(self): # called after every trial to update the DF
@@ -145,6 +151,8 @@ class Params:
         # Add a new row at the end of the DataFrame
         self.trials_df.loc[new_index] = {
             'trial_number': new_index + 1,
+            'VISUAL_INCLUDED': self.VISUAL_INCLUDED,
+            'ESTIM_INCLUDED': self.ESTIM_INCLUDED,
             'orientation': self.orientation,
             'catch': self.catch,
             'contrast': np.nan if self.stim_contrast is None else self.stim_contrast,
@@ -167,6 +175,8 @@ class Params:
         }
         self.trials_df.to_csv(self.filename)
         save(os.path.join(self.directory,'lick_timestamps.npy'), self.lick_times)
+        save(os.path.join(self.directory,'estim_timestamps_software.npy'), self.estim_times_software)
+        save(os.path.join(self.directory,'estim_timestamps_digital.npy'), self.estim_times_digital)
         
         default = lambda o: f"<<non-serializable: {type(o).__qualname__}>>"
         # Open the file where the JSON data will be stored

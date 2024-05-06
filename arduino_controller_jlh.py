@@ -4,7 +4,8 @@ import time
 class ArduinoController:
     def __init__(self, port, sol1_pin=2, sol2_pin=3, 
                  servo_pin=6,
-                 ir_pin = 10):
+                 ir_pin = 10,
+                 estim_pin = 11):
         self.board = Arduino(port)
         it = util.Iterator(self.board)
         it.start()
@@ -12,7 +13,7 @@ class ArduinoController:
         self.sol1_pin = self.board.get_pin(f'd:{sol1_pin}:o')  # Pin for IN1 as output
         self.sol2_pin = self.board.get_pin(f'd:{sol2_pin}:o')  # Pin for IN2 as output
         self.ir_pin = self.board.get_pin(f'd:{ir_pin}:i')  # IR beam input
-        
+        self.estim_pin = self.board.get_pin(f'd:{estim_pin}:i') # ESTIM digital copy from stimulator
         # Setting up a servo on pin 6
         self.servo_pin = self.board.get_pin(f'd:{servo_pin}:o')
         self.board.servo_config(servo_pin)  # Configure pin for servo mode

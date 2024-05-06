@@ -352,12 +352,18 @@ def on_key_press(symbol, modifiers):
         # try:
         print('cleaning up...')
         print('saving lick data...')
+        
         # save(os.path.join(params.directory,'lick_values.npy'),params.lick_values)
         np.save(os.path.join(params.directory,'lick_timestamps.npy'),params.lick_times)
+        np.save(os.path.join(params.directory,'estim_timestamps_software.npy'), params.estim_times_software)
+        np.save(os.path.join(params.directory,'estim_timestamps_digital.npy'), params.estim_times_digital)
         #np.save(os.path.join(params.directory,'spout_positions.npy'),params.spout_positions)
         #np.save(os.path.join(params.directory,'spout_timestamps.npy'),params.spout_timestamps)
+        print('closing devices')
         task_io.board.exit()
+        stimulator.close_connection()
         pyglet.app.exit()
+
 
     elif symbol == pyglet.window.key.R:
         print('R: up')
@@ -448,6 +454,7 @@ def start_trial(dt, params):
     elif params.estim_amp is not None: # estim trial
         print('estim trial')
         # trigger the stim!!!
+        params.estim_times_software.append(timer.time)
         params.estim_params = stimulator.get_params() #track the parameters from the stimulator
         print(params.estim_params)
     if params.autoreward == True and params.stim_contrast != 0:
@@ -533,6 +540,13 @@ def read_lickometer(dt, params):
         print(f'Lick at {current_time}')
         process_lick(params)
 
+def read_estim_digital_copy(dt, params):
+    estimometer = task_io.estim_pin.read() 
+    if estimometer and timer.time - params.last_estim_dig > 0.5: 
+        current_time = timer.time
+        params.estim_times_digital.append(current_time)
+        params.last_estim_dig = current_time
+    
 def select_stimuli(Params, Stimuli): 
     ## select a contrast
     contrasts = Params.contrasts #create a copy just to not mess with logic below
