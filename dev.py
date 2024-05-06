@@ -453,7 +453,8 @@ def start_trial(dt, params):
         print(f"Stimulus Contrast {params.stim_contrast} on")
     elif params.estim_amp is not None: # estim trial
         print('estim trial')
-        stimulator.send_command_to_stimulator('1001 set trigger one') # trigger the stim!!!
+        stimulator.flush_serial_port() # flushes the port so it runs better
+        stimulator.send_command_and_read_response('1001 set trigger one')  # trigger the stim!!!
         params.estim_times_software.append(timer.time)
         params.estim_params = stimulator.get_params() #track the parameters from the stimulator
         print(params.estim_params)
@@ -634,11 +635,11 @@ def deliver_reward(params, task_io):
     print(f"solenoid open for {params.reward_vol} ms")
 
 def update_estim_params(AM4100, amp): #for now only going to change amplitude but can change others
-    res = AM4100.stop() # sets the stimulator to read changes 
+    AM4100.stop() # sets the stimulator to read changes 
     
-    res = AM4100.set_amplitude(amp)
+    AM4100.set_amplitude(amp)
     
-    res = AM4100.run() # sets to waiting for trigger
+    AM4100.run() # sets to waiting for trigger
 
 def move_spout(params, task_io):
     if params.spout_position == 'up': #lickable

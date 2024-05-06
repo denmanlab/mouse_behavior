@@ -181,6 +181,7 @@ class Plotter():
     
 
     def update_plots(self, df):
+        plt.style.use(['dark_background', 'seaborn-paper'])
         my_dpi = 82
         f = plt.figure(figsize=(1000/my_dpi, 800/my_dpi))
         gs = gridspec.GridSpec(6, 4, figure=f)  # 6 rows, 4 columns
@@ -203,8 +204,11 @@ class Plotter():
             
             # detection curves
             ax1_5 = plt.subplot(gs[0:2,3])
-            self.plot_outcomes_by_contrast(ax1_5, df)
-
+            if len(df) > 5:
+                try:
+                    self.plot_outcomes_by_contrast(ax1_5, df)
+                except:
+                    print('Unable to plot outcomes by contrast')
 
             ## row 2
             #outcomes by waittime throughout the session
@@ -244,8 +248,11 @@ class Plotter():
             
             # detection curves
             ax1_5 = plt.subplot(gs[0:2,3])
-            self.plot_outcomes_by_contrast(ax1_5, df)
-
+            if len(df) > 5:
+                try:
+                    self.plot_outcomes_by_contrast(ax1_5, df)
+                except:
+                    print('Unable to plot outcomes by contrast')
 
             ## row 2
             #outcomes by waittime throughout the session
@@ -267,7 +274,7 @@ class Plotter():
             self.plot_recent_trial_outcomes(ax5, df)
         
 
-        plt.tight_layout()
+        plt.tight_layout(rect=[0, 0.03, 1, 0.96]) 
         f.savefig(os.path.join(self.directory, 'progress.png'))
         f.savefig(os.path.join('./models', 'progress_tmp.png'))
         plt.close('all')
@@ -306,7 +313,7 @@ class Plotter():
         ax.plot(df['false_alarm'].cumsum(), self.colors['false_alarm'], label='false alarm')
         ax.plot(df['lapse'].cumsum(), self.colors['lapse'], label='lapse')
         ax.plot(df['catch_lapse'].cumsum(),self.colors['catch_lapse'], label = 'catch_lapse')
-        ax.legend()
+        #ax.legend()
         ax.set_xlabel('trial')
         ax.set_ylabel('trial count')
         ax.set_title('cumulative count of trials')
@@ -336,11 +343,13 @@ class Plotter():
 
         # Adding a secondary y-axis for reaction times
         sec_ax = ax.twinx()
-        sec_ax.plot(df[df['false_alarm']]['trial_start_time'], df[df['false_alarm']]['reaction_time'], 'x', 
+        ax.plot(df[df['false_alarm']]['trial_start_time'], df[df['false_alarm']]['reaction_time'], 'X', 
                     color=self.colors['wait_time'], label='false alarm reaction time', markersize=6)
         sec_ax.spines['right'].set_visible(False)
         sec_ax.set_ylabel('Actual wait time on FA')
         sec_ax.yaxis.label.set_color(self.colors['wait_time'])
+        sec_ax.set_yticks([])  # Removes the y-axis ticks
+        sec_ax.set_yticklabels([])  # Removes the y-axis tick labels
 
         ax.set_xlabel('Seconds')
         ax.set_ylabel('Target wait time')
@@ -384,9 +393,10 @@ class Plotter():
 
         # Set explicit x-axis ticks and log scale
         if stimuli_type == 'contrast':
+            ax.set_xscale('log')
             ax.set_xticks(contrast_levels)
             ax.set_xticklabels(contrast_labels)
-            ax.set_xscale('log')
+            
 
         ax.set_xlabel(stimuli_type)
         ax.set_ylabel('Wait Time')
@@ -431,7 +441,10 @@ class Plotter():
                     'false_alarm': {'visual': 'X', 'estim': '1'}, 
                     'lapse': {'visual': 'X', 'estim': '1'}, 
                     'catch_lapse': {'visual': 'o', 'estim': '*'}}
-            marker_size = 500  # Large marker size for visibility
+            if flip_axes:
+                marker_size = 250
+            else:
+                marker_size = 500  # Large marker size for visibility
 
             # The coordinate position, depending on orientation
             fixed_value = 1  
@@ -466,7 +479,11 @@ class Plotter():
             # To avoid duplicate labels in the legend
             handles, labels = ax.get_legend_handles_labels()
             unique_labels = dict(zip(labels, handles))
-            ax.legend(unique_labels.values(), unique_labels.keys(), loc='upper left' if flip_axes else 'upper right')
+            #ax.legend(unique_labels.values(), unique_labels.keys(), loc='upper left' if flip_axes else 'upper right')
+            if flip_axes:
+                ax.legend(unique_labels.values(), unique_labels.keys(), loc='upper left', bbox_to_anchor=(1.05, 1), markerscale = 0.3)
+            else:
+                ax.legend(unique_labels.values(), unique_labels.keys(), loc='upper right', marker_scale = 0.3)
 
             ax.set_title('Outcomes of the Last 5 Trials')
 
@@ -495,9 +512,9 @@ class Plotter():
         ax.set_title('d-prime Across Different Contrasts')
     
     
-    def plot_outcomes_by_contrast(self, ax, combined_df):
+    def plot_outcomes_by_contrast(self, ax, df):
         # convert outcomes to boolean for easy summing/counting
-        df_ = combined_df.copy()
+        df_ = df.copy()
         df_['false_alarm'] = df_['false_alarm'] & ~df_['reaction_time'].isna()
         
         # group by 'contrast' and calculate the sum of each outcome
