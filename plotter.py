@@ -319,6 +319,7 @@ class Plotter():
         ax.set_title('cumulative count of trials')
 
     def plot_wait_time_vs_starttime(self, ax, df):
+        df = df.copy()
         # Plot for visual stimuli where contrast is not NaN
         visual_df = df[df['contrast'].notna()]
         ax.plot(visual_df[visual_df['rewarded']]['trial_start_time'], visual_df[visual_df['rewarded']]['wait_time'], 'o', 
@@ -333,13 +334,13 @@ class Plotter():
         # Plot for estim trials where contrast is NaN
         estim_df = df[df['contrast'].isna()]
         ax.plot(estim_df[estim_df['rewarded']]['trial_start_time'], estim_df[estim_df['rewarded']]['wait_time'], '*', 
-                color=self.colors['rewarded'], label='rewarded (estim)', markersize=6)
-        ax.plot(estim_df[estim_df['false_alarm']]['trial_start_time'], estim_df[estim_df['false_alarm']]['wait_time'], '1', 
+                color=self.colors['rewarded'], label='rewarded (estim)', markersize=10)
+        ax.plot(estim_df[estim_df['false_alarm']]['trial_start_time'], estim_df[estim_df['false_alarm']]['wait_time'], 'P', 
                 color=self.colors['false_alarm'], label='false alarm (estim)', markersize=6)
-        ax.plot(estim_df[estim_df['lapse']]['trial_start_time'], estim_df[estim_df['lapse']]['wait_time'], '1', 
+        ax.plot(estim_df[estim_df['lapse']]['trial_start_time'], estim_df[estim_df['lapse']]['wait_time'], 'P', 
                 color=self.colors['lapse'], label='lapse (estim)', markersize=6)
         ax.plot(estim_df[estim_df['catch_lapse']]['trial_start_time'], estim_df[estim_df['catch_lapse']]['wait_time'], '*', 
-                color=self.colors['catch_lapse'], label='catch lapse (estim)', markersize=6)
+                color=self.colors['catch_lapse'], label='catch lapse (estim)', markersize=10)
 
         # Adding a secondary y-axis for reaction times
         sec_ax = ax.twinx()
@@ -366,7 +367,7 @@ class Plotter():
             contrast_labels = ['0', '2', '4', '8', '16', '32', '64', '80', '100']  # Use '0' label for 1
             markers = ['o','X']
         else:
-            markers = ['*', '1']
+            markers = ['*', 'P']
 
         jitter_amount = 0.05  # Jitter percentage relative to the contrast value
 
@@ -438,8 +439,8 @@ class Plotter():
                     'lapse': self.colors['lapse'], 'catch_lapse': self.colors['catch_lapse']}
             # Adjusting markers based on trial type (visual or estim)
             markers = {'rewarded': {'visual': 'o', 'estim': '*'}, 
-                    'false_alarm': {'visual': 'X', 'estim': '1'}, 
-                    'lapse': {'visual': 'X', 'estim': '1'}, 
+                    'false_alarm': {'visual': 'X', 'estim': 'P'}, 
+                    'lapse': {'visual': 'X', 'estim': 'P'}, 
                     'catch_lapse': {'visual': 'o', 'estim': '*'}}
             if flip_axes:
                 marker_size = 250
@@ -483,7 +484,7 @@ class Plotter():
             if flip_axes:
                 ax.legend(unique_labels.values(), unique_labels.keys(), loc='upper left', bbox_to_anchor=(1.05, 1), markerscale = 0.3)
             else:
-                ax.legend(unique_labels.values(), unique_labels.keys(), loc='upper right', marker_scale = 0.3)
+                ax.legend(unique_labels.values(), unique_labels.keys(), loc='upper right', markerscale = 0.3)
 
             ax.set_title('Outcomes of the Last 5 Trials')
 

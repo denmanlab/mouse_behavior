@@ -123,7 +123,7 @@ class Params:
                 self.shaping = self.yesterday.get('shaping', self.shaping)
                 self.buzzer_volume = self.yesterday.get('buzzer_volume', self.buzzer_volume)
                 self.contrasts = self.yesterday.get('contrasts', [])
-                self.estim_amps = self.yesterday.get('estim_amps',[])
+                #self.estim_amps = self.yesterday.get('estim_amps',[])
 
         except Exception as e:
             

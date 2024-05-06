@@ -186,8 +186,8 @@ def on_draw():
     imgui.pop_style_color(1)  # Pop the button color style to return to default
 
     
-    button_width = 30  # Example button width
-    button_height = 20  # Example button height
+    button_width = 30  
+    button_height = 20  
 
     #### visual contrast buttons
     first_button = True
@@ -228,7 +228,8 @@ def on_draw():
             params.estim_amps = []  # Clear the list
             print("Electrical stimuli disabled")
     imgui.pop_style_color(1)  # Pop the button color style to return to default
-    
+    button_width = 50  
+    button_height = 20  
     # Handle positive values
     first_button = True  # Ensure first button does not call same_line()
     for amp in sorted(stimuli.estim_params.keys(), key=lambda x: int(x.rstrip('ua'))):  # Sort keys to ensure order
@@ -257,7 +258,7 @@ def on_draw():
 
     # Handle negative values separately
     first_button = True  # Reset for negative values
-    for amp in sorted(stimuli.estim_params.keys(), key=lambda x: int(x.rstrip('ua'))):
+    for amp in sorted(stimuli.estim_params.keys(), key=lambda x: int(x.rstrip('ua')), reverse = True):
         if int(amp.rstrip('ua')) < 0:
             button_label = f"{amp}"
             button_color = (0, 0.5, 0) if amp in params.estim_amps else (0.5, 0, 0)  # Dark green if IN, dark red if OUT
@@ -449,6 +450,7 @@ def setup_trial(params):
 def start_trial(dt, params):
     params.stimulus_visible = True
     params.stim_on_time = timer.time #pyglet.clock.get_default().time()
+    
     if params.stim_contrast is not None: # visual trial
         print(f"Stimulus Contrast {params.stim_contrast} on")
     elif params.estim_amp is not None: # estim trial
@@ -458,6 +460,7 @@ def start_trial(dt, params):
         params.estim_times_software.append(timer.time)
         params.estim_params = stimulator.get_params() #track the parameters from the stimulator
         print(params.estim_params)
+    
     if params.autoreward == True and params.stim_contrast != 0:
         schedule_once(scheduled_reward, 0.25, params, task_io)
     schedule_once(end_trial, params.stim_duration, params)
