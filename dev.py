@@ -453,7 +453,7 @@ def start_trial(dt, params):
         print(f"Stimulus Contrast {params.stim_contrast} on")
     elif params.estim_amp is not None: # estim trial
         print('estim trial')
-        # trigger the stim!!!
+        stimulator.send_command_to_stimulator('1001 set trigger one') # trigger the stim!!!
         params.estim_times_software.append(timer.time)
         params.estim_params = stimulator.get_params() #track the parameters from the stimulator
         print(params.estim_params)
