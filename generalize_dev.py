@@ -1,4 +1,3 @@
-
 from imgui.integrations.pyglet import create_renderer
 import pyglet
 pyglet.resource.path = ['./models']
@@ -19,29 +18,9 @@ from custom_timer import Timer #timer for times that start at zero and can be fe
 from params import Params # params class that saves DF and holds task variables
 from stimuli import Stimuli # holds stimuli infrmation
 from plotter import Plotter # plots things, task live plots and summary plots, individual plots as needed
-
+from moving_circle import Circle
 import sys
-# EBS stimulator class (Am4100)
-am4100_code_path = r"C:\Users\denma\Documents\GitHub\am4100_code"
-sys.path.append(am4100_code_path)
-from am4100 import AM4100
 
-'''
-TODO:
- - hardware interfacing
-    - cameras (some work done with this but not really implemented)
-    - electrical stimulus control
-        - likely will use am4100 
-        - have a class that interfaces with the 4100 that can send commands
-        - need to just integrate this class into game logic
-        - add ability to select stimuli in stimuli and params and in gui.
-        - test latencies.
-        - copy stimuli outputs and params and etc into classes...
-        - determine if i should use game (arduino/nidaq) to external trigger stimulator or figure out how to internal trigger it
-        - 
- - 
-
-'''
 # Collect user input before running the experiment
 mouse_name = input("Enter the mouse name: ")
 mouse_weight = input("Enter the mouse weight (g): ")
@@ -170,145 +149,6 @@ def on_draw():
     
     #####BUTTONS
     
-    # Determine button colors based on whether the stimuli are included
-    visual_button_color = (0, 0.5, 0) if params.VISUAL_INCLUDED else (0.5, 0, 0)  # Green if included, red if not
-    
-    # Push style color for visual stimuli toggle button
-    imgui.push_style_color(imgui.COLOR_BUTTON, *visual_button_color)
-    if imgui.button("Toggle Visual Stimuli"):
-        params.VISUAL_INCLUDED = not params.VISUAL_INCLUDED  # Toggle the boolean
-        if params.VISUAL_INCLUDED:
-            params.contrasts = list(stimuli.grating_images.keys())  # Reset the list to all keys
-            print("Visual stimuli enabled")
-        else:
-            params.contrasts = []  # Clear the list
-            print("Visual stimuli disabled")
-    imgui.pop_style_color(1)  # Pop the button color style to return to default
-
-    
-    button_width = 30  
-    button_height = 20  
-
-    #### visual contrast buttons
-    if params.VISUAL_INCLUDED:
-        first_button = True
-        for contrast in stimuli.grating_images.keys():
-            button_label = f"{contrast}"
-            button_color = (0, 0.5, 0) if contrast in params.contrasts else (0.5, 0, 0) # Dark green if IN, dark red if OUT
-
-            # Adjust the button color based on its state
-            imgui.push_style_color(imgui.COLOR_BUTTON, *button_color)
-
-            if not first_button:
-                imgui.same_line()
-            else:
-                first_button = False
-
-            if imgui.button(button_label, button_width, button_height):
-                if contrast in params.contrasts:
-                    params.contrasts.remove(contrast)
-                    print(f'Removed {contrast} from contrasts')
-                else:
-                    params.contrasts.append(contrast)
-                    print(f'Added {contrast} to contrasts')
-
-            # Pop the button color style to return to default
-            imgui.pop_style_color(1)
-
-    #### estim amplitude buttons
-
-    estim_button_color = (0, 0.5, 0) if params.ESTIM_INCLUDED else (0.5, 0, 0)
-
-    # Push style color for electrical stimuli toggle button
-    imgui.push_style_color(imgui.COLOR_BUTTON, *estim_button_color)
-    if imgui.button("Toggle Electrical Stimuli"):
-        params.ESTIM_INCLUDED = not params.ESTIM_INCLUDED  # Toggle the boolean
-        if params.ESTIM_INCLUDED:
-            params.estim_amps = list(stimuli.estim_params.keys())  # Reset the list to all keys
-            print("Electrical stimuli enabled")
-        else:
-            params.estim_amps = []  # Clear the list
-            print("Electrical stimuli disabled")
-    imgui.pop_style_color(1)  # Pop the button color style to return to default
-    button_width = 50  
-    button_height = 20  
-    
-    if params.ESTIM_INCLUDED:
-        # Handle positive values
-        first_button = True  # Ensure first button does not call same_line()
-        for amp in sorted(stimuli.estim_params.keys(), key=lambda x: int(x.rstrip('ua'))):  # Sort keys to ensure order
-            if int(amp.rstrip('ua')) > 0:
-                button_label = f"{amp}"
-                button_color = (0, 0.5, 0) if amp in params.estim_amps else (0.5, 0, 0)  # Dark green if IN, dark red if OUT
-
-                # Adjust the button color based on its state
-                imgui.push_style_color(imgui.COLOR_BUTTON, *button_color)
-
-                if not first_button:
-                    imgui.same_line()
-                else:
-                    first_button = False
-
-                if imgui.button(button_label, button_width, button_height):
-                    if amp in params.estim_amps:
-                        params.estim_amps.remove(amp)
-                        print(f'Removed {amp} from estim_amps')
-                    else:
-                        params.estim_amps.append(amp)
-                        print(f'Added {amp} to estim_amps')
-
-                # Pop the button color style to return to default
-                imgui.pop_style_color(1)
-
-        # Handle negative values separately
-        first_button = True  # Reset for negative values
-        for amp in sorted(stimuli.estim_params.keys(), key=lambda x: int(x.rstrip('ua')), reverse = True):
-            if int(amp.rstrip('ua')) < 0:
-                button_label = f"{amp}"
-                button_color = (0, 0.5, 0) if amp in params.estim_amps else (0.5, 0, 0)  # Dark green if IN, dark red if OUT
-
-                # Adjust the button color based on its state
-                imgui.push_style_color(imgui.COLOR_BUTTON, *button_color)
-
-                if not first_button:
-                    imgui.same_line()
-                else:
-                    first_button = False
-
-                if imgui.button(button_label, button_width, button_height):
-                    if amp in params.estim_amps:
-                        params.estim_amps.remove(amp)
-                        print(f'Removed {amp} from estim_amps')
-                    else:
-                        params.estim_amps.append(amp)
-                        print(f'Added {amp} to estim_amps')
-
-                # Pop the button color style to return to default
-                imgui.pop_style_color(1)
-
-
-    button_color = (0.5, 0, 0) if params.PAUSED else (0, 0.5, 0) # Dark green if playing, dark red if paused
-    imgui.push_style_color(imgui.COLOR_BUTTON, *button_color)
-    if imgui.button(f"Pause Button: {'PAUSED' if params.PAUSED else 'Playing'}"):
-        if params.PAUSED:
-            unpause(params)
-            print('Unpaused')
-        else:
-            pause(params)
-            print('Paused')
-
-    imgui.pop_style_color(1)
-    
-    '''
-    imgui.same_line()
-    button_color = (0, 0.5, 0) if params.shaping else (0.5, 0, 0) # Dark green if shaping, dark red if not
-    imgui.push_style_color(imgui.COLOR_BUTTON, *button_color)
-    if imgui.button(f"Shaping: {'True' if params.shaping else 'False'}"):
-        params.shaping = not params.shaping  # Toggle the shaping state
-        print(f'Shaping: {"On" if params.shaping else "Off"}')
-
-    imgui.pop_style_color(1)
-    '''
     # autoreward
     imgui.same_line()
     button_color = (0, 0.5, 0) if params.autoreward else (0.5, 0, 0) # Dark green if autoreward, dark red if not
@@ -451,85 +291,7 @@ def setup_trial(params):
         unschedule(setup_trial)  # Unschedule previous setup_trial calls
         schedule_once(lambda dt: setup_trial(params), 0.5)
 
-def select_stimuli(Params, Stimuli): 
-    ## select a contrast
-    contrasts = Params.contrasts #create a copy just to not mess with logic below
-    estim_amps = Params.estim_amps
-    
-    '''
-    if Params.catch_frequency > 0:
-        for _ in range(Params.catch_frequency):
-            contrasts.append('0')
-    '''
-    
-    if Params.VISUAL_INCLUDED and not Params.ESTIM_INCLUDED:
-        contrast = choice(contrasts)
-        params.stim_contrast = int(contrast)
-        amp = None 
-        params.estim_amp = None
-    if Params.ESTIM_INCLUDED and not Params.VISUAL_INCLUDED:
-        amp = choice(estim_amps)
-        params.estim_amp = int(amp.strip('ua'))
-        contrast = None
-        params.stim_contrast = None
-    if Params.ESTIM_INCLUDED and Params.VISUAL_INCLUDED:
-        combined = contrasts + estim_amps
-        stimuli = choice(combined)
-        
-        if 'ua' in stimuli:
-            amp = stimuli
-            params.estim_amp = int(amp.strip('ua'))
-            contrast = None
-            params.stim_contrast = None
-        else:
-            contrast = stimuli
-            amp = None
-            params.estim_amp = None
-            params.stim_contrast = int(contrast)
-    
-    if contrast is not None:
-        if contrast == '0':
-            Params.catch = True
-            Stimuli.sprite = pyglet.sprite.Sprite(Stimuli.blank_image, x = 1000, y = 450)
-            Stimuli.sprite.scale = 4.8
-            Stimuli.sprite.visible = False
 
-            Stimuli.sprite2 = pyglet.sprite.Sprite(Stimuli.blank_image, x = 200, y = 400)
-            # Set the anchor point to the center of sprite2 for true centering
-            Stimuli.sprite2.x = monitor_window.width // 2
-            Stimuli.sprite2.y = monitor_window.height // 2
-            Stimuli.sprite2.scale = 0.5
-            Stimuli.sprite2.anchor_x = Stimuli.sprite2.width // 2
-            Stimuli.sprite2.anchor_y = Stimuli.sprite2.height // 2
-        else: 
-            Params.catch=False
-            Stimuli.grating_image = Stimuli.grating_images[contrast]
-            Stimuli.grating_image.anchor_x = Stimuli.grating_image.width // 2 #center image
-            Stimuli.sprite = pyglet.sprite.Sprite(Stimuli.grating_image, x = 1000, y = 450)
-            Stimuli.sprite.scale = 4.8
-            Stimuli.sprite.visible = True
-            
-            Stimuli.sprite2 = pyglet.sprite.Sprite(Stimuli.grating_image, x = 200, y = 400)
-            # Set the anchor point to the center of sprite2 for true centering
-            Stimuli.sprite2.x = monitor_window.width // 2
-            Stimuli.sprite2.y = monitor_window.height // 2
-            Stimuli.sprite2.scale = 0.5
-            Stimuli.sprite2.anchor_x = Stimuli.sprite2.width // 2
-            Stimuli.sprite2.anchor_y = Stimuli.sprite2.height // 2
-    
-    elif amp is not None: #that is its an estim trial
-        Params.catch = False
-        # sprite logic just to keep consistent for "drawing" but sets it to invisible like a catch trial
-        Stimuli.sprite = pyglet.sprite.Sprite(Stimuli.blank_image, x = 1000, y = 450)
-        Stimuli.sprite.scale = 4.8
-        Stimuli.sprite.visible = False
-        #monitor window
-
-        Stimuli.estim_label = pyglet.text.Label(f'Estim Amp: {amp}', font_name='Arial', font_size=20,
-                                      x=monitor_window.width // 2, y=monitor_window.height // 2 - 70,
-                                      anchor_x='center')
-        
-        update_estim_params(stimulator, int(amp.strip('ua')))
 
 def start_trial(dt, params):
     params.stimulus_visible = True
@@ -599,17 +361,15 @@ def end_trial(dt, params):
         schedule_once(lambda dt: move_spout(params, task_io), params.timeout_duration) #move spout up/lickable after timeout
         schedule_once(lambda dt: setup_trial(params), params.timeout_duration)
         schedule_once(set_timeout_false, params.timeout_duration)
-    else:   #schedule setup trial once mouse stops licking (qquiet period)
+    else:   #schedule setup trial once mouse stops licking (quiet period)
         unschedule(start_trial) #just for safety
         unschedule(end_trial) # just for safety
         schedule_once(lambda dt: setup_trial(params), params.quiet_period)
     
     # Update and save DF
     params.update_df()
-    #try:
     plotter.update_plots(params.trials_df)
-    #except Exception as e:
-    #    print(f"Unable to update the plotter: {e}")
+
     
 
 def set_timeout_false(dt): 
@@ -635,8 +395,6 @@ def read_estim_digital_copy(dt, params):
         params.estim_times_digital.append(current_time)
         params.last_estim_dig = current_time
     
-
-        
 
 def deliver_reward(params, task_io):
     #task_io.s.rotate(params.reward_vol,'dispense') this was for Stepper!
@@ -675,19 +433,9 @@ def run_experiment():
 
 # Create Params instance with user inputs
 params = Params(mouse=mouse_name, weight=mouse_weight) #these variables are set at the top of the script w an input so they occur before drawn windows
-
-# create stimulator class
-try:
-    stimulator = AM4100(com_port = 'COM4')
-    params.stimulator_connected = True
-except: 
-    params.stimulator_connected = False
-
 plotter = Plotter(params) # plotting functions and tools for performance window
-stimuli = Stimuli(params) #keeps track of stimuli settings and sprites. 
+circle = Circle(window) # circle class for moving circle task
 
-if len(params.contrasts) < 1: #this is set to None by default in PARAMS but loaded by previous params if they exist
-    params.contrasts = stimuli.contrasts #set contrasts to the default contrasts in the stimuli class
 
 
 timer = Timer()

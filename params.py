@@ -47,6 +47,7 @@ class Params:
         # booleans for if visual stimuli and/or estim is included
         self.VISUAL_INCLUDED = True
         self.ESTIM_INCLUDED = False
+        self.MOVING_CIRCLE_INCLUDED = False
         
         self.spout_position = 'up' #up is lickable, down is unlickable
 

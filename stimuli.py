@@ -2,6 +2,8 @@ import pyglet
 pyglet.resource.path = ['./models']
 pyglet.resource.reindex()
 
+from moving_circle import Circle
+
 # load visual stimuli
 class Stimuli():
     def __init__(self, params):
@@ -39,3 +41,10 @@ class Stimuli():
         self.estim_amps = list(self.estim_params.keys())
         self.estim_circle = None
         self.estim_label = None
+        
+        
+        #self.circle = Circle(window)
+            
+        
+        
+            
