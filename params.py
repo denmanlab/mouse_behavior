@@ -57,6 +57,7 @@ class Params:
         self.orientation = None # not currently implemented
         self.catch = None # catch trials are where contrast is 0
         self.PAUSED = False
+        self.stimulator_connected = False
 
         
         # DEFAULT PARAMS (modulate through GUI)

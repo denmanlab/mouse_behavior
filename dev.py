@@ -671,7 +671,11 @@ def run_experiment():
 params = Params(mouse=mouse_name, weight=mouse_weight) #these variables are set at the top of the script w an input so they occur before drawn windows
 
 # create stimulator class
-stimulator = AM4100(com_port = 'COM4')
+try:
+    stimulator = AM4100(com_port = 'COM4')
+    params.stimulator_connected = True
+except: 
+    params.stimulator_connected = False
 
 plotter = Plotter(params) # plotting functions and tools for performance window
 stimuli = Stimuli(params) #keeps track of stimuli settings and sprites. 

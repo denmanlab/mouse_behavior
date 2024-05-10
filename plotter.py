@@ -106,7 +106,7 @@ class Plotter():
             self.plot_reaction_time_vs_starttime(ax4, df)
         except:
             print('reaction time no work')
-        ax4.legend_.remove()
+        
 
         
         ## Summary of recent sessions (currently 10)
@@ -207,7 +207,7 @@ class Plotter():
             if len(df) > 5:
                 try:
                     self.plot_outcomes_by_contrast(ax1_5, df)
-                except:
+                except: 
                     print('Unable to plot outcomes by contrast')
 
             ## row 2
@@ -362,14 +362,16 @@ class Plotter():
         df = df.dropna(subset=[stimuli_type])
         if stimuli_type == 'contrast':
             df['contrast'] = df['contrast'].replace(0, 1)
+            df['contrast'] = df['contrast'].replace(100, 250)
+            df['contrast'] = df['contrast'].replace(80, 130)
             # Define contrast levels and corresponding ticks for the x-axis
-            contrast_levels = [1, 2, 4, 8, 16, 32, 64, 80, 100]
+            contrast_levels = [1, 2, 4, 8, 16, 32, 64, 130, 250]
             contrast_labels = ['0', '2', '4', '8', '16', '32', '64', '80', '100']  # Use '0' label for 1
             markers = ['o','X']
         else:
             markers = ['*', 'P']
 
-        jitter_amount = 0.05  # Jitter percentage relative to the contrast value
+        jitter_amount = 0.02  # Jitter percentage relative to the contrast value
 
         # Function to add jitter
         def add_jitter(values, amount):
@@ -523,7 +525,7 @@ class Plotter():
 
         # filter contrasts with more than 10 trials
         total_trials = grouped.sum(axis=1)
-        grouped_filtered = grouped[total_trials > 10]
+        grouped_filtered = grouped[total_trials > 3]
 
         # calculate proportions for the filtered DataFrame
         for col in ['rewarded', 'false_alarm', 'lapse', 'catch_lapse']:
