@@ -48,11 +48,11 @@ class Plotter():
                         'catch_lapse': '#266dd3',
                         'wait_time': '#03fcf8',
                     }
-        plt.style.use(['dark_background', 'seaborn-talk'])
+            
+        plt.style.use(['dark_background', 'seaborn-v0_8-paper'])
     
-
-
     def summary_plots(self, df):
+        plt.style.use(['dark_background', 'seaborn-v0_8-talk'])
         # set up figure and gridspec
         f = plt.figure(figsize=(15, 20))
         gs = gridspec.GridSpec(8, 3, height_ratios=[2, 2, 3, 0.1, 2, 2, 2.5, 2.5], width_ratios=[5, 2, 2])
@@ -181,12 +181,10 @@ class Plotter():
     
 
     def update_plots(self, df):
-        plt.style.use(['dark_background', 'seaborn-paper'])
+        
         my_dpi = 82
         f = plt.figure(figsize=(1000/my_dpi, 800/my_dpi))
-        gs = gridspec.GridSpec(6, 4, figure=f)  # 6 rows, 4 columns
-
-        
+        gs = gridspec.GridSpec(6, 4, figure=f)  # 6 rows, 4 columns        
         ### Set up axes using GridSpec
         #standard one! 
         if df['ESTIM_INCLUDED'].any(): #if there are any estim trials, change plotting format!
@@ -194,21 +192,10 @@ class Plotter():
             #rolling proportions
             ax0 = plt.subplot(gs[0:2, 0:2])
             self.plot_rolling_proportion(ax0, df)
-            
-            #plot lick rate
-            #TODO
-            
+ 
             #cumuluative counts
-            ax1 = plt.subplot(gs[0:2, 2])
+            ax1 = plt.subplot(gs[0:2, 2:4])
             self.plot_cumulative_count(ax1, df)
-            
-            # detection curves
-            ax1_5 = plt.subplot(gs[0:2,3])
-            if len(df) > 5:
-                try:
-                    self.plot_outcomes_by_contrast(ax1_5, df)
-                except: 
-                    print('Unable to plot outcomes by contrast')
 
             ## row 2
             #outcomes by waittime throughout the session
@@ -243,17 +230,9 @@ class Plotter():
             #TODO
 
             #cumuluative counts
-            ax1 = plt.subplot(gs[0:2, 2])
+            ax1 = plt.subplot(gs[0:2, 2:4])
             self.plot_cumulative_count(ax1, df)
             
-            # detection curves
-            ax1_5 = plt.subplot(gs[0:2,3])
-            if len(df) > 5:
-                try:
-                    self.plot_outcomes_by_contrast(ax1_5, df)
-                except:
-                    print('Unable to plot outcomes by contrast')
-
             ## row 2
             #outcomes by waittime throughout the session
             ax2 = plt.subplot(gs[2:4, 0:2])

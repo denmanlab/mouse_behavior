@@ -126,7 +126,7 @@ class Circle:
 # init circle
 circle = Circle()
 
-def update(dt):
+def update_circle(dt):
     if circle.visible:
         circle.move()
 
@@ -163,6 +163,6 @@ def on_draw():
     if circle.visible:
         circle.draw()
 # 60fps
-pyglet.clock.schedule_interval(update, 1/60.0)
+pyglet.clock.schedule_interval(update_circle, 1/60.0)
 
 pyglet.app.run()

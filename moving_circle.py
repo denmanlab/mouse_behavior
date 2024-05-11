@@ -6,13 +6,14 @@ from pyglet.gl import glClearColor
 
 
 class Circle:
-    def __init__(self, window):
+    def __init__(self, window_width, window_height):
         self.background_color = 0.5
-        self.window = window
+        self.window_width = window_width
+        self.window_height = window_height
         self.radii = [25, 50, 100, 200]  # Four different radius sizes
         self.radius = random.choice(self.radii)
-        self.x = random.randint(self.radius, window.width - self.radius)
-        self.y = random.randint(self.radius, window.height - self.radius)
+        self.x = random.randint(self.radius, self.window_width - self.radius)
+        self.y = random.randint(self.radius, self.window_height - self.radius)
         self.speed = 2
         self.vx = random.uniform(-self.speed, self.speed)  # x vel
         self.vy = random.uniform(-self.speed, self.speed)  # y vel
@@ -32,9 +33,7 @@ class Circle:
 
     def set_contrast_color(self):
         self.contrast = random.choice(self.contrasts)
-        
         # calculate the color value based on the contrast level
-        # is this contrast? lol
         brightness = self.background_color + (self.contrast * (1 - self.background_color))
         
         brightness = max(0, min(1, brightness))
@@ -49,9 +48,9 @@ class Circle:
         self.x += self.vx
         self.y += self.vy
         # reverse direction if hitting the boundary
-        if self.x - self.radius <= 0 or self.x + self.radius >= self.window.width:
+        if self.x - self.radius <= 0 or self.x + self.radius >= self.window_width:
             self.vx = -self.vx
-        if self.y - self.radius <= 0 or self.y + self.radius >= self.window.height:
+        if self.y - self.radius <= 0 or self.y + self.radius >= self.window_height:
             self.vy = -self.vy
         # update  position
         self.lcircle.x = self.x
@@ -72,8 +71,8 @@ class Circle:
         self.radius = random.choice(self.radii)
         self.lcircle.radius = self.radius
         self.rcircle.radius = self.radius
-        self.x = random.randint(self.radius, self.window.width - self.radius)
-        self.y = random.randint(self.radius, self.window.height - self.radius)
+        self.x = random.randint(self.radius, self.window_width - self.radius)
+        self.y = random.randint(self.radius, self.window_height - self.radius)
         self.vx = random.choice([-self.speed,self.speed])
         self.vy = random.choice([-self.speed,self.speed])
         self.set_contrast_color()

@@ -45,19 +45,26 @@ class Params:
         self.last_estim_dig = 0
 
         # booleans for if visual stimuli and/or estim is included
-        self.VISUAL_INCLUDED = True
+        self.GRATINGS_INCLUDED = True
         self.ESTIM_INCLUDED = False
         self.MOVING_CIRCLE_INCLUDED = False
         
         self.spout_position = 'up' #up is lickable, down is unlickable
 
-        # stimuli information for data frame (rest is stored in stimuli class)
+        ###### stimuli information for data frame (rest is stored in stimuli class)
         self.task = None # the task for a given trial #TODO add this to the dataframe
+        #contrast_task
         self.stim_contrast = None # contrast of last trial
-        self.estim_amp = None # amplitude value for a trial
-        self.estim_params = None # these are the actual stimulator values in the form of a dictionary
         self.orientation = None # not currently implemented
         self.catch = None # catch trials are where contrast is 0
+        #estim task
+        self.estim_amp = None # amplitude value for a trial
+        self.estim_params = None # these are the actual stimulator values in the form of a dictionary
+        #circle task
+        self.circle_radius = None
+        self.circle_contrast = None
+        
+        
         self.PAUSED = False
         self.stimulator_connected = False
 
@@ -81,12 +88,16 @@ class Params:
     
     
         #dataframe to be saved
-        self.trials_df = pd.DataFrame(columns=[ 'trial_number', 
+        self.trials_df = pd.DataFrame(columns=[ 'trial_number',
+                                                'task' 
+                                                'GRATINGS_INCLUDED',
                                                 'ESTIM_INCLUDED',
-                                                'VISUAL_INCLUDED',
-                                                'contrast', 'orientation', 
+                                                'MOVING_CIRCLE_INCLUDED',
+                                                'contrast', 
                                                 'estim_amp',
                                                 'estim_params',
+                                                'circle_contrast',
+                                                'circle_radius',
                                                 'catch', 
                                                 'outcome','false_alarm','rewarded','lapse', 'catch_lapse',
                                                 'quiet_period',
@@ -154,13 +165,16 @@ class Params:
         # Add a new row at the end of the DataFrame
         self.trials_df.loc[new_index] = {
             'trial_number': new_index + 1,
-            'VISUAL_INCLUDED': self.VISUAL_INCLUDED,
+            'task': self.task,
+            'GRATINGS_INCLUDED': self.GRATINGS_INCLUDED,
             'ESTIM_INCLUDED': self.ESTIM_INCLUDED,
-            'orientation': self.orientation,
+            'MOVING_CIRCLE_INCLUDED': self.MOVING_CIRCLE_INCLUDED,
             'catch': self.catch,
             'contrast': np.nan if self.stim_contrast is None else self.stim_contrast,
             'estim_amp': np.nan if self.estim_amp is None else self.estim_amp,
             'estim_params': self.estim_params,
+            'circle_contrast': self.circle_contrast,
+            'circle_radius': self.circle_radius,
             'outcome': self.trial_outcome,
             'false_alarm': self.false_alarm,
             'rewarded': self.rewarded,

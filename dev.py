@@ -5,6 +5,7 @@ pyglet.resource.path = ['./models']
 pyglet.resource.reindex()
 from pyglet.clock import schedule_once, unschedule
 import imgui
+import threading
 
 from random import randint, choice, uniform
 
@@ -24,7 +25,7 @@ import sys
 # EBS stimulator class (Am4100)
 am4100_code_path = r"C:\Users\denma\Documents\GitHub\am4100_code"
 sys.path.append(am4100_code_path)
-from am4100 import AM4100
+from am4100 import AM4100 # type: ignore
 
 '''
 TODO:
@@ -52,6 +53,7 @@ window = pyglet.window.Window(width=2160, height=1920, caption="Experiment Windo
 window.set_location(-2160, 0) # change this for rig setup
 window.set_vsync(False)
 pyglet.gl.glClearColor(0.5,0.5,0.5,1)
+
 #settings
 imgui.create_context() # Initialize ImGui context
 settings_window = pyglet.window.Window(width = 500, height = 400, caption = "Settings")
@@ -82,21 +84,31 @@ def on_draw():
     window.clear()
     # Draw stimulus if visible
     if params.stimulus_visible:
-       stimuli.sprite.draw()
+        if params.task == 'gratings':
+           stimuli.sprite.draw()
+        elif params.task == 'estim':
+            pass
+        elif params.task == 'moving_circle':
+            stimuli.circle.draw()
+            stimuli.circle.move()
 
 @monitor_window.event
 def on_draw():
     monitor_window.clear()
     # Draw stimulus if visible
     if params.stimulus_visible:
-        if params.stim_contrast is not None: # its a visual trial
+        if params.task == 'gratings': # its a visual trial
             stimuli.sprite2.draw()
-        else: # its an estim trial
-            #stimuli.estim_circle.draw()
+        elif params.task == 'estim': # its an estim trial
             stimuli.estim_label.draw()        
+        elif params.task == 'moving_circle':
+            stimuli.circle.draw()
+            stimuli.circle.move()
 
 @settings_window.event
 def on_draw():
+
+
     settings_window.clear()
     imgui.new_frame()
 
@@ -123,6 +135,7 @@ def on_draw():
                                                               params.quiet_period, 1.0, 5.0, 
                                                               "%.1f", imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
     if changed_quiet_period:
+        
         params.quiet_period = new_quiet_period
         print(f'Quiet Period: {params.quiet_period}')
 
@@ -131,12 +144,14 @@ def on_draw():
                                                           params.reward_vol, 10, 200, 
                                                           "%.0f", imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
     if changed_reward_vol:
+        
         params.reward_vol = new_reward_vol
         print(f'Reward Volume: {params.reward_vol}')
 
     
     changed_stim_dur, new_stim_dur = imgui.slider_float('Stim Duration', params.stim_duration, 1.0, 10.0, '%.1f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
     if changed_stim_dur:
+        
         params.stim_duration = new_stim_dur
         print(f'Stim Duration {params.stim_duration}')
 
@@ -149,11 +164,13 @@ def on_draw():
 
     changed_FA_penalty, new_FA_penalty = imgui.slider_int('FA Penalty', params.FA_penalty, 0,10,'%.0f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
     if changed_FA_penalty:
+        
         params.FA_penalty = new_FA_penalty
         print(f'FA Penalty {params.FA_penalty}')
     
     changed_timeout_dur, new_timeout_dur = imgui.slider_int('Timeout Duration', params.timeout_duration, 0,30,'%.0f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
     if changed_timeout_dur:
+        
         params.timeout_duration = new_timeout_dur
         print(f'Timeout Duration {params.timeout_duration}')
 
@@ -164,6 +181,7 @@ def on_draw():
     new_buzzer_volume = round(new_buzzer_volume_raw / 0.05) * 0.05
 
     if changed_buzzer_volume:
+        
         params.buzzer_volume = new_buzzer_volume
         print(f'Buzzer Volume {params.buzzer_volume:.2f}')
 
@@ -171,26 +189,27 @@ def on_draw():
     #####BUTTONS
     
     # Determine button colors based on whether the stimuli are included
-    visual_button_color = (0, 0.5, 0) if params.VISUAL_INCLUDED else (0.5, 0, 0)  # Green if included, red if not
+    gratings_button_color = (0, 0.5, 0) if params.GRATINGS_INCLUDED else (0.5, 0, 0)  # Green if included, red if not
     
-    # Push style color for visual stimuli toggle button
-    imgui.push_style_color(imgui.COLOR_BUTTON, *visual_button_color)
-    if imgui.button("Toggle Visual Stimuli"):
-        params.VISUAL_INCLUDED = not params.VISUAL_INCLUDED  # Toggle the boolean
-        if params.VISUAL_INCLUDED:
+    # Push style color for gratings stimuli toggle button
+    imgui.push_style_color(imgui.COLOR_BUTTON, *gratings_button_color)
+    if imgui.button("Toggle gratings Stimuli"):
+        
+        params.GRATINGS_INCLUDED = not params.GRATINGS_INCLUDED  # Toggle the boolean
+        if params.GRATINGS_INCLUDED:
             params.contrasts = list(stimuli.grating_images.keys())  # Reset the list to all keys
-            print("Visual stimuli enabled")
+            print("Gratings stimuli enabled")
         else:
             params.contrasts = []  # Clear the list
-            print("Visual stimuli disabled")
+            print("Gratings stimuli disabled")
     imgui.pop_style_color(1)  # Pop the button color style to return to default
 
     
     button_width = 30  
     button_height = 20  
 
-    #### visual contrast buttons
-    if params.VISUAL_INCLUDED:
+    #### gratings contrast buttons
+    if params.GRATINGS_INCLUDED:
         first_button = True
         for contrast in stimuli.grating_images.keys():
             button_label = f"{contrast}"
@@ -205,6 +224,7 @@ def on_draw():
                 first_button = False
 
             if imgui.button(button_label, button_width, button_height):
+                
                 if contrast in params.contrasts:
                     params.contrasts.remove(contrast)
                     print(f'Removed {contrast} from contrasts')
@@ -222,6 +242,7 @@ def on_draw():
     # Push style color for electrical stimuli toggle button
     imgui.push_style_color(imgui.COLOR_BUTTON, *estim_button_color)
     if imgui.button("Toggle Electrical Stimuli"):
+        
         params.ESTIM_INCLUDED = not params.ESTIM_INCLUDED  # Toggle the boolean
         if params.ESTIM_INCLUDED:
             params.estim_amps = list(stimuli.estim_params.keys())  # Reset the list to all keys
@@ -250,6 +271,7 @@ def on_draw():
                     first_button = False
 
                 if imgui.button(button_label, button_width, button_height):
+                    
                     if amp in params.estim_amps:
                         params.estim_amps.remove(amp)
                         print(f'Removed {amp} from estim_amps')
@@ -276,6 +298,7 @@ def on_draw():
                     first_button = False
 
                 if imgui.button(button_label, button_width, button_height):
+                    
                     if amp in params.estim_amps:
                         params.estim_amps.remove(amp)
                         print(f'Removed {amp} from estim_amps')
@@ -286,10 +309,24 @@ def on_draw():
                 # Pop the button color style to return to default
                 imgui.pop_style_color(1)
 
-
+    ## moving cirlce task button
+    moving_circle_button_color = (0, 0.5, 0) if params.MOVING_CIRCLE_INCLUDED else (0.5, 0, 0)  # Green if included, red if not
+    
+    # Push style color for moving circle stimuli toggle button
+    imgui.push_style_color(imgui.COLOR_BUTTON, *moving_circle_button_color)
+    if imgui.button("Toggle Moving Circle Task"):
+        
+        params.MOVING_CIRCLE_INCLUDED = not params.MOVING_CIRCLE_INCLUDED  # Toggle the boolean
+        if params.MOVING_CIRCLE_INCLUDED:
+            print("Moving Circle stimuli enabled")
+        else:
+            print("Moving Circle stimuli disabled")
+    imgui.pop_style_color(1)  # Pop the button color style to return to default
+    
     button_color = (0.5, 0, 0) if params.PAUSED else (0, 0.5, 0) # Dark green if playing, dark red if paused
     imgui.push_style_color(imgui.COLOR_BUTTON, *button_color)
     if imgui.button(f"Pause Button: {'PAUSED' if params.PAUSED else 'Playing'}"):
+        
         if params.PAUSED:
             unpause(params)
             print('Unpaused')
@@ -298,22 +335,13 @@ def on_draw():
             print('Paused')
 
     imgui.pop_style_color(1)
-    
-    '''
-    imgui.same_line()
-    button_color = (0, 0.5, 0) if params.shaping else (0.5, 0, 0) # Dark green if shaping, dark red if not
-    imgui.push_style_color(imgui.COLOR_BUTTON, *button_color)
-    if imgui.button(f"Shaping: {'True' if params.shaping else 'False'}"):
-        params.shaping = not params.shaping  # Toggle the shaping state
-        print(f'Shaping: {"On" if params.shaping else "Off"}')
 
-    imgui.pop_style_color(1)
-    '''
     # autoreward
     imgui.same_line()
     button_color = (0, 0.5, 0) if params.autoreward else (0.5, 0, 0) # Dark green if autoreward, dark red if not
     imgui.push_style_color(imgui.COLOR_BUTTON, *button_color)
     if imgui.button(f"AutoReward: {'True' if params.autoreward else 'False'}"):
+        
         params.autoreward = not params.autoreward  # Toggle the autoreward state
         print(f'AutoReward: {"On" if params.autoreward else "Off"}')
 
@@ -431,7 +459,8 @@ def setup_trial(params):
     
     current_time = timer.time
     if (current_time - params.last_lick_time) >= params.quiet_period and not params.timeout:
-        select_stimuli(params, stimuli)
+        #select_stimuli(params, stimuli)
+        select_stimuli2(params, stimuli)
         params.wait_time = uniform(params.min_wait_time, params.max_wait_time)
         params.trial_running = True
         params.stimulus_visible = False
@@ -462,17 +491,17 @@ def select_stimuli(Params, Stimuli):
             contrasts.append('0')
     '''
     
-    if Params.VISUAL_INCLUDED and not Params.ESTIM_INCLUDED:
+    if Params.GRATINGS_INCLUDED and not Params.ESTIM_INCLUDED:
         contrast = choice(contrasts)
         params.stim_contrast = int(contrast)
         amp = None 
         params.estim_amp = None
-    if Params.ESTIM_INCLUDED and not Params.VISUAL_INCLUDED:
+    if Params.ESTIM_INCLUDED and not Params.GRATINGS_INCLUDED:
         amp = choice(estim_amps)
         params.estim_amp = int(amp.strip('ua'))
         contrast = None
         params.stim_contrast = None
-    if Params.ESTIM_INCLUDED and Params.VISUAL_INCLUDED:
+    if Params.ESTIM_INCLUDED and Params.GRATINGS_INCLUDED:
         combined = contrasts + estim_amps
         stimuli = choice(combined)
         
@@ -488,129 +517,67 @@ def select_stimuli(Params, Stimuli):
             params.stim_contrast = int(contrast)
     
     if contrast is not None:
-        if contrast == '0':
-            Params.catch = True
-            Stimuli.sprite = pyglet.sprite.Sprite(Stimuli.blank_image, x = 1000, y = 450)
-            Stimuli.sprite.scale = 4.8
-            Stimuli.sprite.visible = False
+        Stimuli.update_contrast_image(contrast)
 
-            Stimuli.sprite2 = pyglet.sprite.Sprite(Stimuli.blank_image, x = 200, y = 400)
-            # Set the anchor point to the center of sprite2 for true centering
-            Stimuli.sprite2.x = monitor_window.width // 2
-            Stimuli.sprite2.y = monitor_window.height // 2
-            Stimuli.sprite2.scale = 0.5
-            Stimuli.sprite2.anchor_x = Stimuli.sprite2.width // 2
-            Stimuli.sprite2.anchor_y = Stimuli.sprite2.height // 2
-        else: 
-            Params.catch=False
-            Stimuli.grating_image = Stimuli.grating_images[contrast]
-            Stimuli.grating_image.anchor_x = Stimuli.grating_image.width // 2 #center image
-            Stimuli.sprite = pyglet.sprite.Sprite(Stimuli.grating_image, x = 1000, y = 450)
-            Stimuli.sprite.scale = 4.8
-            Stimuli.sprite.visible = True
-            
-            Stimuli.sprite2 = pyglet.sprite.Sprite(Stimuli.grating_image, x = 200, y = 400)
-            # Set the anchor point to the center of sprite2 for true centering
-            Stimuli.sprite2.x = monitor_window.width // 2
-            Stimuli.sprite2.y = monitor_window.height // 2
-            Stimuli.sprite2.scale = 0.5
-            Stimuli.sprite2.anchor_x = Stimuli.sprite2.width // 2
-            Stimuli.sprite2.anchor_y = Stimuli.sprite2.height // 2
-    
     elif amp is not None: #that is its an estim trial
-        Params.catch = False
-        # sprite logic just to keep consistent for "drawing" but sets it to invisible like a catch trial
-        Stimuli.sprite = pyglet.sprite.Sprite(Stimuli.blank_image, x = 1000, y = 450)
-        Stimuli.sprite.scale = 4.8
-        Stimuli.sprite.visible = False
-        #monitor window
-
-        Stimuli.estim_label = pyglet.text.Label(f'Estim Amp: {amp}', font_name='Arial', font_size=20,
-                                      x=monitor_window.width // 2, y=monitor_window.height // 2 - 70,
-                                      anchor_x='center')
-        
+        Stimuli.estim_drawings(amp)
         update_estim_params(stimulator, int(amp.strip('ua')))
 
-    def select_stimuli2(Params, Stimuli): 
+def select_stimuli2(Params, Stimuli): 
+    tasks = []
+    if Params.GRATINGS_INCLUDED:
+        tasks.append('gratings')
+    if Params.ESTIM_INCLUDED:
+        tasks.append('estim')
+    if Params.MOVING_CIRCLE_INCLUDED:
+        tasks.append('moving_circle')
+            
+    task = choice(tasks)
+    print(f'{task} task selected for this trial')
+    params.task = task 
+    if task == 'gratings':
+        contrast = choice(Params.contrasts)
+        Params.stim_contrast = int(contrast)
+        Stimuli.update_contrast_image(contrast)
         
-        tasks = []
-        if Params.VISUAL_INCLUDED:
-            tasks.append('visual')
-        if Params.ESTIM_INCLUDED:
-            tasks.append('estim')
-        if Params.MOVING_CIRCLE_INCLUDED:
-            tasks.append('moving_circle')
-                
-        task = choice(tasks)
-        params.task = task 
-        if task == 'visual':
-            contrast = choice(Params.contrasts)
-            Params.stim_contrast = int(contrast)
-            Params.estim_amp = None
-            if contrast == '0': #catch trial
-                Params.catch = True
-                Stimuli.sprite = pyglet.sprite.Sprite(Stimuli.blank_image, x = 1000, y = 450)
-                Stimuli.sprite.scale = 4.8
-                Stimuli.sprite.visible = False
-
-                Stimuli.sprite2 = pyglet.sprite.Sprite(Stimuli.blank_image, x = 200, y = 400)
-                # Set the anchor point to the center of sprite2 for true centering
-                Stimuli.sprite2.x = monitor_window.width // 2
-                Stimuli.sprite2.y = monitor_window.height // 2
-                Stimuli.sprite2.scale = 0.5
-                Stimuli.sprite2.anchor_x = Stimuli.sprite2.width // 2
-                Stimuli.sprite2.anchor_y = Stimuli.sprite2.height // 2
-            else: # not a catch trial
-                Params.catch=False
-                Stimuli.grating_image = Stimuli.grating_images[contrast]
-                Stimuli.grating_image.anchor_x = Stimuli.grating_image.width // 2 #center image
-                Stimuli.sprite = pyglet.sprite.Sprite(Stimuli.grating_image, x = 1000, y = 450)
-                Stimuli.sprite.scale = 4.8
-                Stimuli.sprite.visible = True
-                
-                Stimuli.sprite2 = pyglet.sprite.Sprite(Stimuli.grating_image, x = 200, y = 400)
-                # Set the anchor point to the center of sprite2 for true centering
-                Stimuli.sprite2.x = monitor_window.width // 2
-                Stimuli.sprite2.y = monitor_window.height // 2
-                Stimuli.sprite2.scale = 0.5
-                Stimuli.sprite2.anchor_x = Stimuli.sprite2.width // 2
-                Stimuli.sprite2.anchor_y = Stimuli.sprite2.height // 2
-             
-        elif task == 'estim':
-            amp = choice(Params.estim_amps)
-            Params.estim_amp = int(amp.strip('ua'))
-            Params.stim_contrast = None
-            Params.catch = False
-            # sprite logic just to keep consistent for "drawing" but sets it to invisible like a catch trial
-            Stimuli.sprite = pyglet.sprite.Sprite(Stimuli.blank_image, x = 1000, y = 450)
-            Stimuli.sprite.scale = 4.8
-            Stimuli.sprite.visible = False
-            #monitor window
-            Stimuli.estim_label = pyglet.text.Label(f'Estim Amp: {amp}', font_name='Arial', font_size=20,
-                                        x=monitor_window.width // 2, y=monitor_window.height // 2 - 70,
-                                        anchor_x='center')
+        # set other task variables to none
+        Params.estim_amp = None
+        Params.circle_contrast = None
+        Params.circle_radius = None
             
-            update_estim_params(stimulator, int(amp.strip('ua'))) #updates the stimulator with chosen estim param
+    elif task == 'estim':
+        amp = choice(Params.estim_amps)
+        Params.estim_amp = int(amp.strip('ua'))
+        Stimuli.estim_drawings(amp)
+        update_estim_params(stimulator, int(amp.strip('ua'))) #updates the stimulator with chosen estim param
         
-        elif task == 'moving_circle':
-            pass
-            ''' contrast and radius size are chosen randomly in the moving circle class... 
-                speed and angle incrementer are static.           
-            '''
-            #circle.reset_position update the circle (should be circle.reset_position)
-            #Params.circle_contrast = circle.contrast
-            #Params.circle_size = circle.radius 
+        #set other task variables to none
+        Params.stim_contrast = None
+        Params.circle_contrast = None
+        Params.circle_radius = None
+        
+    elif task == 'moving_circle':
+        ''' contrast and radius size are chosen randomly in the moving circle class... 
+            speed and angle incrementer are static.           
+        '''
+        Stimuli.circle.reset_position() #update the circle (should be circle.reset_position)
+        Params.circle_contrast = Stimuli.circle.contrast
+        Params.circle_radius = Stimuli.circle.radius 
+        
+        #set other task variables to none
+        Params.stim_contrast = None
+        Params.estim_amp = None 
             
-            
-
 def start_trial(dt, params):
     params.stimulus_visible = True
     params.stim_on_time = timer.time #pyglet.clock.get_default().time()
     
-    if params.stim_contrast is not None: # visual trial
+    if params.task == 'gratings':
         print(f"Stimulus Contrast {params.stim_contrast} on")
-    elif params.estim_amp is not None: # estim trial
-        print('estim trial')
+    elif params.task == 'moving_circle':
+        print(f'Moving circle: contrast: {params.circle_contrast}, radius: {params.circle_radius}')
+    elif params.task == 'estim':    
+        print(f'Estim: Amplitude: {params.estim_amp}')
         stimulator.flush_serial_port() # flushes the port so it runs better
         stimulator.send_command_and_read_response('1001 set trigger one')  # trigger the stim!!!
         params.estim_times_software.append(timer.time)
@@ -618,7 +585,7 @@ def start_trial(dt, params):
         print(params.estim_params)
     
     if params.autoreward == True and params.stim_contrast != 0:
-        schedule_once(scheduled_reward, 0.25, params, task_io)
+        schedule_once(scheduled_reward, 0.1, params, task_io)
     schedule_once(end_trial, params.stim_duration, params)
 
 def process_lick(params): #processes lick events detected by read_lickometer for task relevancy
@@ -639,14 +606,23 @@ def process_lick(params): #processes lick events detected by read_lickometer for
                 params.trial_outcome = "False Alarm"
                 params.rewarded_lick_time = timer.time # rewarded_lick_time is bad variable name for this but its fine. i don't want to create new variable
                 print("Catch: Lick detected after 0 Contrast.")
+
             else:
                 params.rewarded_lick_time = timer.time
                 params.trial_outcome = "Reward"
                 deliver_reward(params, task_io)
                 print("Reward: Lick detected after stimulus.")
+
+            print('this code was reached')
+            params.stimulus_visible = False
+            unschedule(start_trial)
+            unschedule(end_trial)
+            schedule_once(end_trial,0,params)
+        
         params.lick_detected_during_trial = True
 
 def end_trial(dt, params):
+    params.stimulus_visible = False
     if not params.lick_detected_during_trial:
         params.trial_outcome = "Lapse"
         params.rewarded_lick_time = None
@@ -657,7 +633,6 @@ def end_trial(dt, params):
     
     # Reset trial parameters for the next trial
     params.trial_running = False
-    params.stimulus_visible = False
     
     # check if mouse needs a timeout!!! i.e., FA streak greater than FA penalty threshold
     if params.FA_penalty_check():
@@ -671,19 +646,20 @@ def end_trial(dt, params):
         schedule_once(lambda dt: move_spout(params, task_io), params.timeout_duration) #move spout up/lickable after timeout
         schedule_once(lambda dt: setup_trial(params), params.timeout_duration)
         schedule_once(set_timeout_false, params.timeout_duration)
-    else:   #schedule setup trial once mouse stops licking (qquiet period)
+    else:   #schedule setup trial once mouse stops licking (quiet period)
         unschedule(start_trial) #just for safety
         unschedule(end_trial) # just for safety
         schedule_once(lambda dt: setup_trial(params), params.quiet_period)
     
     # Update and save DF
-    params.update_df()
-    #try:
-    plotter.update_plots(params.trials_df)
-    #except Exception as e:
-    #    print(f"Unable to update the plotter: {e}")
+    ## this has caused some lag and I don't want it to mess with timing so trying to add threading
+    #params.update_df()
+    #plotter.update_plots(params.trials_df)
+    pyglet.clock.schedule_once(update_df_and_plots, 0.1)
     
-
+def update_df_and_plots(dt):
+    params.update_df()
+    plotter.update_plots(params.trials_df)
 def set_timeout_false(dt): 
     params.timeout = False
 
@@ -756,7 +732,8 @@ except:
     params.stimulator_connected = False
 
 plotter = Plotter(params) # plotting functions and tools for performance window
-stimuli = Stimuli(params) #keeps track of stimuli settings and sprites. 
+stimuli = Stimuli(params, window.width, window.height, 
+                  monitor_window.width, monitor_window.height) #keeps track of stimuli settings and sprites. 
 
 if len(params.contrasts) < 1: #this is set to None by default in PARAMS but loaded by previous params if they exist
     params.contrasts = stimuli.contrasts #set contrasts to the default contrasts in the stimuli class
