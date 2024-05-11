@@ -52,6 +52,7 @@ class Params:
         self.spout_position = 'up' #up is lickable, down is unlickable
 
         # stimuli information for data frame (rest is stored in stimuli class)
+        self.task = None # the task for a given trial #TODO add this to the dataframe
         self.stim_contrast = None # contrast of last trial
         self.estim_amp = None # amplitude value for a trial
         self.estim_params = None # these are the actual stimulator values in the form of a dictionary
@@ -75,8 +76,8 @@ class Params:
         self.shaping = False
         self.buzzer_volume = 0.05
         
-        self.contrasts = [] #a list naturally, but defaults to none so that this can be set by the stimulus class if not loaded by previous params
-        self.estim_amps = []
+        self.contrasts = [] #a list of the static contrasts that can be chosen
+        self.estim_amps = [] # a list of the stim amplitudes that can be chosen
     
     
         #dataframe to be saved

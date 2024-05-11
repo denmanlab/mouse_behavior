@@ -531,6 +531,78 @@ def select_stimuli(Params, Stimuli):
         
         update_estim_params(stimulator, int(amp.strip('ua')))
 
+    def select_stimuli2(Params, Stimuli): 
+        
+        tasks = []
+        if Params.VISUAL_INCLUDED:
+            tasks.append('visual')
+        if Params.ESTIM_INCLUDED:
+            tasks.append('estim')
+        if Params.MOVING_CIRCLE_INCLUDED:
+            tasks.append('moving_circle')
+                
+        task = choice(tasks)
+        params.task = task 
+        if task == 'visual':
+            contrast = choice(Params.contrasts)
+            Params.stim_contrast = int(contrast)
+            Params.estim_amp = None
+            if contrast == '0': #catch trial
+                Params.catch = True
+                Stimuli.sprite = pyglet.sprite.Sprite(Stimuli.blank_image, x = 1000, y = 450)
+                Stimuli.sprite.scale = 4.8
+                Stimuli.sprite.visible = False
+
+                Stimuli.sprite2 = pyglet.sprite.Sprite(Stimuli.blank_image, x = 200, y = 400)
+                # Set the anchor point to the center of sprite2 for true centering
+                Stimuli.sprite2.x = monitor_window.width // 2
+                Stimuli.sprite2.y = monitor_window.height // 2
+                Stimuli.sprite2.scale = 0.5
+                Stimuli.sprite2.anchor_x = Stimuli.sprite2.width // 2
+                Stimuli.sprite2.anchor_y = Stimuli.sprite2.height // 2
+            else: # not a catch trial
+                Params.catch=False
+                Stimuli.grating_image = Stimuli.grating_images[contrast]
+                Stimuli.grating_image.anchor_x = Stimuli.grating_image.width // 2 #center image
+                Stimuli.sprite = pyglet.sprite.Sprite(Stimuli.grating_image, x = 1000, y = 450)
+                Stimuli.sprite.scale = 4.8
+                Stimuli.sprite.visible = True
+                
+                Stimuli.sprite2 = pyglet.sprite.Sprite(Stimuli.grating_image, x = 200, y = 400)
+                # Set the anchor point to the center of sprite2 for true centering
+                Stimuli.sprite2.x = monitor_window.width // 2
+                Stimuli.sprite2.y = monitor_window.height // 2
+                Stimuli.sprite2.scale = 0.5
+                Stimuli.sprite2.anchor_x = Stimuli.sprite2.width // 2
+                Stimuli.sprite2.anchor_y = Stimuli.sprite2.height // 2
+             
+        elif task == 'estim':
+            amp = choice(Params.estim_amps)
+            Params.estim_amp = int(amp.strip('ua'))
+            Params.stim_contrast = None
+            Params.catch = False
+            # sprite logic just to keep consistent for "drawing" but sets it to invisible like a catch trial
+            Stimuli.sprite = pyglet.sprite.Sprite(Stimuli.blank_image, x = 1000, y = 450)
+            Stimuli.sprite.scale = 4.8
+            Stimuli.sprite.visible = False
+            #monitor window
+            Stimuli.estim_label = pyglet.text.Label(f'Estim Amp: {amp}', font_name='Arial', font_size=20,
+                                        x=monitor_window.width // 2, y=monitor_window.height // 2 - 70,
+                                        anchor_x='center')
+            
+            update_estim_params(stimulator, int(amp.strip('ua'))) #updates the stimulator with chosen estim param
+        
+        elif task == 'moving_circle':
+            pass
+            ''' contrast and radius size are chosen randomly in the moving circle class... 
+                speed and angle incrementer are static.           
+            '''
+            #circle.reset_position update the circle (should be circle.reset_position)
+            #Params.circle_contrast = circle.contrast
+            #Params.circle_size = circle.radius 
+            
+            
+
 def start_trial(dt, params):
     params.stimulus_visible = True
     params.stim_on_time = timer.time #pyglet.clock.get_default().time()
