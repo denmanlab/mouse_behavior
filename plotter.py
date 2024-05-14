@@ -226,8 +226,6 @@ class Plotter():
             #rolling proportions
             ax0 = plt.subplot(gs[0:2, 0:2])
             self.plot_rolling_proportion(ax0, df)
-            #plot lick rate
-            #TODO
 
             #cumuluative counts
             ax1 = plt.subplot(gs[0:2, 2:4])
@@ -240,17 +238,30 @@ class Plotter():
 
             #Outcomes by contrast (x) and wait_times (y)
             ax3 = plt.subplot(gs[2:4, 2:4])
-            self.plot_wait_time_vs_contrast(ax3, df)
+            if (df['task'] == 'moving_circle').any():
+                self.plot_moving_circles(ax3, df)
+            else:
+                self.plot_wait_time_vs_contrast(ax3, df)
             
-
             ## third row
             #reaction times
             ax4 = plt.subplot(gs[4:6, 0:2])
-            self.plot_reaction_time_vs_starttime(ax4, df)
+            if (df['task'] == 'moving_circle').any():
+                self.plot_reaction_time_moving_circle(ax4, df)
+            else:
+                self.plot_reaction_time_vs_starttime(ax4, df)
             
             #recent outcomes
-            ax5 = plt.subplot(gs[4:6, 2:4])
-            self.plot_recent_trial_outcomes(ax5, df)
+            if (df['task'] == 'moving_circle').any() and (df['task'] == 'gratings').any():
+
+                ax5 = plt.subplot(gs[4:6, 2])
+                self.plot_wait_time_vs_contrast(ax5, df)
+                ax5_5 = plt.subplot(gs[4:6, 3])
+                self.plot_recent_trial_outcomes(ax5_5, df, flip_axes = True)
+    
+            else:
+                ax5 = plt.subplot(gs[4:6, 2:4])
+                self.plot_recent_trial_outcomes(ax5, df)
         
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.96]) 
@@ -408,6 +419,26 @@ class Plotter():
         ax.set_xlabel('Amplitude (uA)')
         ax.set_ylabel('Reaction Time')
         ax.set_title('Reaction Times for Stimuli')
+        
+    def plot_reaction_time_moving_circle(self, ax, df):
+        # Filter the dataframe for 'moving_circle' tasks and rewarded is True
+        moving_circle_df = df.loc[(df['task'] == 'moving_circle') & (df['rewarded'] == True)]
+        if len(moving_circle_df) > 3:
+
+            contrast = moving_circle_df['circle_contrast']
+            alpha_values = (contrast - 0.08) / (1 - 0.08)
+            
+            jitter = 0.05 * moving_circle_df['circle_radius'] * np.random.randn(len(moving_circle_df))
+            jittered_radius = moving_circle_df['circle_radius'] + jitter
+            
+            # Create the scatter plot on the provided axes object
+            ax.scatter(jittered_radius, moving_circle_df['reaction_time'], color=self.colors['rewarded'], alpha=alpha_values, label='Trials')
+
+            # Set labels and title for the axes
+            ax.set_xlabel('Circle Radius')
+            ax.set_ylabel('Reaction Time')
+            ax.set_title('Reaction Time by Circle Radius with Contrast Opacity')
+            
 
 
     def plot_recent_trial_outcomes(self, ax, df, flip_axes=False):
@@ -468,6 +499,33 @@ class Plotter():
                 ax.legend(unique_labels.values(), unique_labels.keys(), loc='upper right', markerscale = 0.3)
 
             ax.set_title('Outcomes of the Last 5 Trials')
+            
+    def plot_moving_circles(self, ax, df):
+        # Filter the dataframe for 'moving_circle' tasks
+        moving_circle_df = df.loc[(df['task'] == 'moving_circle') & (df['rewarded'] == True)]
+        if moving_circle_df.empty:
+            print("No data to plot.")
+            return
+        # Determine color based on whether the trial was rewarded
+        colors = np.where(moving_circle_df['rewarded'], self.colors['rewarded'], self.colors['lapse']) 
+
+        contrast = moving_circle_df['circle_contrast']
+        alpha_values = 0.2 + 0.8 * (contrast - 0.08) / (1 - 0.08)
+        
+        # Create the scatter plot on the provided axes object
+        print(moving_circle_df['circle_startx'].shape, moving_circle_df['circle_starty'].shape, moving_circle_df['circle_radius'].shape)
+
+        ax.scatter(moving_circle_df['circle_startx'], moving_circle_df['circle_starty'],
+                            s=moving_circle_df['circle_radius'], color=colors, alpha=alpha_values, label='Start Positions')
+
+        # Set limits, labels, and title for the axes
+        ax.set_ylim(0, 1920)
+        ax.set_xlim(0, 2160)
+        ax.invert_yaxis()  # Flips the Y-axis
+        ax.set_xlabel('Start Pos X')
+        ax.set_ylabel('Start Pos Y')
+        ax.set_title('')
+
 
 
             

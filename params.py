@@ -63,6 +63,8 @@ class Params:
         #circle task
         self.circle_radius = None
         self.circle_contrast = None
+        self.circle_startx = None
+        self.circle_starty = None
         
         
         self.PAUSED = False
@@ -89,7 +91,7 @@ class Params:
     
         #dataframe to be saved
         self.trials_df = pd.DataFrame(columns=[ 'trial_number',
-                                                'task' 
+                                                'task', 
                                                 'GRATINGS_INCLUDED',
                                                 'ESTIM_INCLUDED',
                                                 'MOVING_CIRCLE_INCLUDED',
@@ -98,6 +100,8 @@ class Params:
                                                 'estim_params',
                                                 'circle_contrast',
                                                 'circle_radius',
+                                                'circle_startx',
+                                                'circle_starty',
                                                 'catch', 
                                                 'outcome','false_alarm','rewarded','lapse', 'catch_lapse',
                                                 'quiet_period',
@@ -175,6 +179,8 @@ class Params:
             'estim_params': self.estim_params,
             'circle_contrast': self.circle_contrast,
             'circle_radius': self.circle_radius,
+            'circle_startx': self.circle_startx,
+            'circle_starty': self.circle_starty,
             'outcome': self.trial_outcome,
             'false_alarm': self.false_alarm,
             'rewarded': self.rewarded,

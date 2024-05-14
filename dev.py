@@ -103,12 +103,10 @@ def on_draw():
             stimuli.estim_label.draw()        
         elif params.task == 'moving_circle':
             stimuli.circle.draw()
-            stimuli.circle.move()
+            #stimuli.circle.move()
 
 @settings_window.event
 def on_draw():
-
-
     settings_window.clear()
     imgui.new_frame()
 
@@ -544,6 +542,8 @@ def select_stimuli2(Params, Stimuli):
         Params.estim_amp = None
         Params.circle_contrast = None
         Params.circle_radius = None
+        Params.circle_startx = None
+        Params.circle_starty = None
             
     elif task == 'estim':
         amp = choice(Params.estim_amps)
@@ -555,6 +555,8 @@ def select_stimuli2(Params, Stimuli):
         Params.stim_contrast = None
         Params.circle_contrast = None
         Params.circle_radius = None
+        Params.circle_startx = None
+        Params.circle_starty = None
         
     elif task == 'moving_circle':
         ''' contrast and radius size are chosen randomly in the moving circle class... 
@@ -563,6 +565,8 @@ def select_stimuli2(Params, Stimuli):
         Stimuli.circle.reset_position() #update the circle (should be circle.reset_position)
         Params.circle_contrast = Stimuli.circle.contrast
         Params.circle_radius = Stimuli.circle.radius 
+        Params.circle_startx = Stimuli.circle.x
+        Params.circle_starty = Stimuli.circle.y
         
         #set other task variables to none
         Params.stim_contrast = None

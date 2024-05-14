@@ -10,13 +10,13 @@ class Circle:
         self.background_color = 0.5
         self.window_width = window_width
         self.window_height = window_height
-        self.radii = [25, 50, 100, 200]  # Four different radius sizes
+        self.radii = [100, 200, 300, 400]  # Four different radius sizes
         self.radius = random.choice(self.radii)
         self.x = random.randint(self.radius, self.window_width - self.radius)
-        self.y = random.randint(self.radius, self.window_height - self.radius)
-        self.speed = 2
-        self.vx = random.uniform(-self.speed, self.speed)  # x vel
-        self.vy = random.uniform(-self.speed, self.speed)  # y vel
+        self.y = random.randint(self.radius, (self.window_height - 500) - self.radius) #- self.radius)
+        self.speed = 0.5
+        self.vx = random.choice([-self.speed, self.speed])  # x vel #do choice
+        self.vy = random.choice([-self.speed, self.speed])  # y vel do choice
         self.contrasts = [0.08, 0.32, 0.64, 1.0]  # contrasts
         self.set_contrast_color()
         self.start_angle = random.uniform(0, 2 * 3.14159)  # random start angle in radians
@@ -27,9 +27,8 @@ class Circle:
         self.rcircle = shapes.Sector(self.x, self.y, self.radius, 
                                      angle=3.14, start_angle=self.start_angle + 3.14, 
                                      color=(((255-self.color[0]),)*3))
-        self.angle_increment = 0.01 # could do a dist of this too but static prob better
-        self.visible = True
-        self.success = None
+        self.angle_increment = 0.005 # could do a dist of this too but static prob better
+
 
     def set_contrast_color(self):
         self.contrast = random.choice(self.contrasts)
@@ -50,7 +49,7 @@ class Circle:
         # reverse direction if hitting the boundary
         if self.x - self.radius <= 0 or self.x + self.radius >= self.window_width:
             self.vx = -self.vx
-        if self.y - self.radius <= 0 or self.y + self.radius >= self.window_height:
+        if self.y - self.radius <= 0 or self.y + self.radius >= self.window_height-500:
             self.vy = -self.vy
         # update  position
         self.lcircle.x = self.x
@@ -72,7 +71,7 @@ class Circle:
         self.lcircle.radius = self.radius
         self.rcircle.radius = self.radius
         self.x = random.randint(self.radius, self.window_width - self.radius)
-        self.y = random.randint(self.radius, self.window_height - self.radius)
+        self.y = random.randint(self.radius, (self.window_height-500) - self.radius)
         self.vx = random.choice([-self.speed,self.speed])
         self.vy = random.choice([-self.speed,self.speed])
         self.set_contrast_color()
@@ -85,5 +84,6 @@ class Circle:
         self.start_angle = random.uniform(0, 2 * 3.14159)
         self.lcircle.start_angle = self.start_angle
         self.rcircle.start_angle = self.start_angle + 3.14
-        print(self.color)
-        print((((255-self.color[0]),)*3))
+        
+        #print(self.color)
+        #print((((255-self.color[0]),)*3))
