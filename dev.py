@@ -617,7 +617,6 @@ def process_lick(params): #processes lick events detected by read_lickometer for
                 deliver_reward(params, task_io)
                 print("Reward: Lick detected after stimulus.")
 
-            print('this code was reached')
             params.stimulus_visible = False
             unschedule(start_trial)
             unschedule(end_trial)
