@@ -10,6 +10,7 @@ import threading
 from random import randint, choice, uniform
 
 
+
 import pandas as pd
 import numpy as np
 import datetime, os, glob, sys
@@ -160,7 +161,7 @@ def on_draw():
         print(f'Catch Frequency {params.catch_frequency}')
     '''
 
-    changed_FA_penalty, new_FA_penalty = imgui.slider_int('FA Penalty', params.FA_penalty, 0,10,'%.0f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
+    changed_FA_penalty, new_FA_penalty = imgui.slider_int('FA Penalty (11=No Penalty)', params.FA_penalty, 0,12,'%.0f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
     if changed_FA_penalty:
         
         params.FA_penalty = new_FA_penalty
@@ -460,6 +461,7 @@ def setup_trial(params):
         #select_stimuli(params, stimuli)
         select_stimuli2(params, stimuli)
         params.wait_time = uniform(params.min_wait_time, params.max_wait_time)
+        # params.wait_time = params.min_wait_time + np.random.exponential(params.max_wait_time / 10.)
         params.trial_running = True
         params.stimulus_visible = False
         params.lick_detected_during_trial = False
@@ -467,6 +469,10 @@ def setup_trial(params):
         
         params.trial_start_time = timer.time
         print(f"Trial Started, wait time is {params.wait_time} seconds.")
+        
+        #electrify spout
+        if params.FA_penalty == 12: # hack so penalty can be motor down time (0-10), none (11), or shock spout (12)
+            electrify_spout(params,task_io)
         
         # Unschedule to avoid overlaps
         unschedule(start_trial)
@@ -573,6 +579,9 @@ def select_stimuli2(Params, Stimuli):
         Params.estim_amp = None 
             
 def start_trial(dt, params):
+    if params.FA_penalty == 12: # hack so penalty can be motor down time (0-10), none (11), or shock spout (12)
+        deelectrify_spout(params,task_io) # unelectrify spout
+    
     params.stimulus_visible = True
     params.stim_on_time = timer.time #pyglet.clock.get_default().time()
     
@@ -686,6 +695,18 @@ def read_estim_digital_copy(dt, params):
         params.estim_times_digital.append(current_time)
         params.last_estim_dig = current_time
     
+def electrify_spout(params, task_io):
+    if not params.spout_charged:
+        task_io.spout_charge_pin.write(1) # set the arduino pin connected to the relay high
+        params.spout_charged = True
+        print('spout charged for FAs')
+        
+def deelectrify_spout(params, task_io):
+    if params.spout_charged:
+        task_io.spout_charge_pin.write(0) # set the arduino pin connected to the relay low
+        params.spout_charged = False
+        print('spout decharged for rewards')
+        
 
         
 

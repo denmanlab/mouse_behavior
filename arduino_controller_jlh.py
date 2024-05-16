@@ -5,7 +5,8 @@ class ArduinoController:
     def __init__(self, port, sol1_pin=2, sol2_pin=3, 
                  servo_pin=6,
                  ir_pin = 10,
-                 estim_pin = 12):
+                 estim_pin = 12,
+                 spout_charge_pin = 5):
         self.board = Arduino(port)
         it = util.Iterator(self.board)
         it.start()
@@ -17,6 +18,7 @@ class ArduinoController:
         # Setting up a servo on pin 6
         self.servo_pin = self.board.get_pin(f'd:{servo_pin}:o')
         self.board.servo_config(servo_pin)  # Configure pin for servo mode
+        self.spout_charge_pin = self.board.get_pin(f'd:{spout_charge_pin}:o')
 
 
         self.buzzer_pin = self.board.get_pin('d:11:p')  # 'p' for PWM

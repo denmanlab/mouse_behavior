@@ -70,6 +70,7 @@ class Params:
         self.PAUSED = False
         self.stimulator_connected = False
 
+        self.spout_charged  =False
         
         # DEFAULT PARAMS (modulate through GUI)
         self.reward_vol = 80 # time solenoid is open in ms -- need to titrate for exact weights.. but 50ms seems like a good starting spot
@@ -219,6 +220,9 @@ class Params:
         else:
             self.FA_streak = 0
         if self.FA_streak > self.FA_penalty:
-            return True
+            if self.FA_penalty > 10.1:
+                return False
+            else:
+                return True
         else:
             return False
