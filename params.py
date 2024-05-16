@@ -219,6 +219,9 @@ class Params:
         else:
             self.FA_streak = 0
         if self.FA_streak > self.FA_penalty:
-            return True
+            if self.FA_penalty > 10.1:
+                return False
+            else:
+                return True
         else:
             return False

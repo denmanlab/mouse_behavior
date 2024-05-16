@@ -160,7 +160,7 @@ def on_draw():
         print(f'Catch Frequency {params.catch_frequency}')
     '''
 
-    changed_FA_penalty, new_FA_penalty = imgui.slider_int('FA Penalty', params.FA_penalty, 0,10,'%.0f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
+    changed_FA_penalty, new_FA_penalty = imgui.slider_int('FA Penalty (11=No Penalty)', params.FA_penalty, 0,12,'%.0f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
     if changed_FA_penalty:
         
         params.FA_penalty = new_FA_penalty
@@ -468,6 +468,10 @@ def setup_trial(params):
         params.trial_start_time = timer.time
         print(f"Trial Started, wait time is {params.wait_time} seconds.")
         
+        #electrify spout
+        if params.FA_penalty == 12: # hack so penalty can be motor down time (0-10), none (11), or shock spout (12)
+            pass
+        
         # Unschedule to avoid overlaps
         unschedule(start_trial)
         unschedule(end_trial)
@@ -573,6 +577,9 @@ def select_stimuli2(Params, Stimuli):
         Params.estim_amp = None 
             
 def start_trial(dt, params):
+    if params.FA_penalty == 12: # hack so penalty can be motor down time (0-10), none (11), or shock spout (12)
+        pass # unelectrify spout
+    
     params.stimulus_visible = True
     params.stim_on_time = timer.time #pyglet.clock.get_default().time()
     
