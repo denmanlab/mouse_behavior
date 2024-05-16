@@ -180,93 +180,49 @@ class Plotter():
         plt.savefig(save_str)
     
 
+
     def update_plots(self, df):
         
         my_dpi = 82
         f = plt.figure(figsize=(1000/my_dpi, 800/my_dpi))
-        gs = gridspec.GridSpec(6, 4, figure=f)  # 6 rows, 4 columns        
+        gs = gridspec.GridSpec(6, 4, figure=f,
+                               height_ratios=[2,2,4,4,3,3], 
+                               width_ratios=[4, 4, 6, 2])  # 6 rows, 4 columns        
         ### Set up axes using GridSpec
-        #standard one! 
-        if df['ESTIM_INCLUDED'].any(): #if there are any estim trials, change plotting format!
-            ## row 1
-            #rolling proportions
-            ax0 = plt.subplot(gs[0:2, 0:2])
-            self.plot_rolling_proportion(ax0, df)
- 
-            #cumuluative counts
-            ax1 = plt.subplot(gs[0:2, 2:4])
-            self.plot_cumulative_count(ax1, df)
+        ## row 1
+        #rolling proportions
+        ax0 = plt.subplot(gs[0:2, 0:2])
+        self.plot_rolling_proportion(ax0, df)
 
-            ## row 2
-            #outcomes by waittime throughout the session
-            ax2 = plt.subplot(gs[2:4, 0:2])
-            self.plot_wait_time_vs_starttime(ax2, df)
-
-            #Outcomes by contrast (x) and wait_times (y)
-            ax3 = plt.subplot(gs[2, 2:4])
-            self.plot_wait_time_vs_contrast(ax3, df, stimuli_type = 'contrast')
-            
-            #Outcomes by contrast (x) and wait_times (y)
-            ax3_5 = plt.subplot(gs[3, 2:4])
-            self.plot_wait_time_vs_contrast(ax3_5, df, stimuli_type = 'estim_amp')            
-
-            ## third row
-            #reaction times
-            ax4 = plt.subplot(gs[4:6, 0])
-            self.plot_reaction_time_vs_starttime(ax4, df)
-            
-            ax4_5 = plt.subplot(gs[4:6, 1:3])
-            self.plot_reaction_time_estim(ax4_5, df)
-            
-            #recent outcomes
-            ax5 = plt.subplot(gs[4:6, 3])
-            self.plot_recent_trial_outcomes(ax5, df, flip_axes = True)
-        else: # only visual stimuli
-            ## row 1
-            #rolling proportions
-            ax0 = plt.subplot(gs[0:2, 0:2])
-            self.plot_rolling_proportion(ax0, df)
-
-            #cumuluative counts
-            ax1 = plt.subplot(gs[0:2, 2:4])
-            self.plot_cumulative_count(ax1, df)
-            
-            ## row 2
-            #outcomes by waittime throughout the session
-            ax2 = plt.subplot(gs[2:4, 0:2])
-            self.plot_wait_time_vs_starttime(ax2, df)
-
-            #Outcomes by contrast (x) and wait_times (y)
-            ax3 = plt.subplot(gs[2:4, 2:4])
-            #self.plot_wait_time_vs_contrast(ax3, df)
-            
-            if (df['task'] == 'moving_circle').any():
-                self.plot_moving_circles(ax3, df)
-            else:
-                self.plot_wait_time_vs_contrast(ax3, df)
-            
-            ## third row
-            #reaction times
-            ax4 = plt.subplot(gs[4:6, 0:2])
-            if (df['task'] == 'moving_circle').any():
-                self.plot_reaction_time_moving_circle(ax4, df)
-            else:
-                self.plot_reaction_time_vs_starttime(ax4, df)
-            
-            #recent outcomes
-            if (df['task'] == 'moving_circle').any() and (df['task'] == 'gratings').any():
-
-                ax5 = plt.subplot(gs[4:6, 2])
-                self.plot_wait_time_vs_contrast(ax5, df)
-                ax5_5 = plt.subplot(gs[4:6, 3])
-                self.plot_recent_trial_outcomes(ax5_5, df, flip_axes = True)
-    
-            else:
-                ax5 = plt.subplot(gs[4:6, 2:4])
-                self.plot_recent_trial_outcomes(ax5, df)
+        #cumuluative counts
+        ax1 = plt.subplot(gs[0:2, 2:4])
+        self.plot_cumulative_count(ax1, df)
         
+        ## row 2
+        #outcomes by waittime throughout the session
+        ax2 = plt.subplot(gs[2:4, 0:2])
+        self.plot_wait_time_vs_starttime_alltasks(ax2, df)
 
-        plt.tight_layout(rect=[0, 0.03, 1, 0.96]) 
+        #Outcomes by contrast (x) and wait_times (y)
+        ax3 = plt.subplot(gs[2:4, 2:4])
+        self.plot_wait_time_vs_contrast_alltasks(ax3, df)
+        
+        ## third row
+        #reaction times
+        ax4 = plt.subplot(gs[4:6, 0:2])
+        self.plot_reaction_times_alltasks(ax4, df)
+        
+        #recent outcomes
+        if (df['task'] == 'moving_circle').any():
+            ax5 = plt.subplot(gs[4:6, 2])
+            self.plot_moving_circles(ax5, df)
+            ax5_5 = plt.subplot(gs[4:6, 3])
+            self.plot_recent_trial_outcomes(ax5_5, df, flip_axes = True)
+
+        else:
+            ax5 = plt.subplot(gs[4:6, 2:4])
+            self.plot_recent_trial_outcomes(ax5, df)
+        plt.tight_layout(rect=[0, 0.03, 1, 0.96])
         f.savefig(os.path.join(self.directory, 'progress.png'))
         f.savefig(os.path.join('./models', 'progress_tmp.png'))
         plt.close('all')
@@ -288,8 +244,9 @@ class Plotter():
         # Calculate the sprite's position to center it in the window
         self.sprite_progress.x = 10
         self.sprite_progress.y = 10
-        self.sprite_progress.scale = 0.8
+        self.sprite_progress.scale = 0.8 
         
+    
     def plot_rolling_proportion(self, ax, df):
         ax.plot(df['rewarded'].rolling(20).mean(), self.colors['rewarded'])
         ax.plot(df['false_alarm'].rolling(20).mean(), self.colors['false_alarm'])
@@ -310,6 +267,59 @@ class Plotter():
         ax.set_ylabel('trial count')
         ax.set_title('cumulative count of trials')
 
+    
+    def plot_wait_time_vs_starttime_alltasks(self, ax, df):
+        df = df.sort_values(by='task')
+        # Loop through each unique task and plot accordingly
+
+        for task in df['task'].unique():
+            task_df = df[df['task'] == task]
+            
+            if task == 'gratings':
+                ax.scatter(task_df[task_df['rewarded']]['trial_start_time'], task_df[task_df['rewarded']]['wait_time'], 
+                        marker='s',
+                        color=self.colors['rewarded'],  s = 20)
+                ax.scatter(task_df[task_df['false_alarm']]['trial_start_time'], task_df[task_df['false_alarm']]['wait_time'], 
+                        marker='x',
+                        color=self.colors['false_alarm'], linewidth = 1, s = 12)
+                ax.scatter(task_df[task_df['lapse']]['trial_start_time'], task_df[task_df['lapse']]['wait_time'], 
+                        marker='s', 
+                        color=self.colors['lapse'], s = 10)
+                ax.scatter(task_df[task_df['catch_lapse']]['trial_start_time'], task_df[task_df['catch_lapse']]['wait_time'],
+                        marker='s', 
+                        color = self.colors['catch_lapse'],  s = 10)
+            elif task == 'estim':
+                ax.scatter(task_df[task_df['rewarded']]['trial_start_time'], task_df[task_df['rewarded']]['wait_time'], 
+                        marker='^', color=self.colors['rewarded'], s = 16)
+                ax.scatter(task_df[task_df['false_alarm']]['trial_start_time'], task_df[task_df['false_alarm']]['wait_time'], 
+                        marker='^', color=self.colors['false_alarm'], facecolor = 'none', s = 12)
+                ax.scatter(task_df[task_df['lapse']]['trial_start_time'], task_df[task_df['lapse']]['wait_time'], 
+                        marker='^', color=self.colors['lapse'], facecolor = 'none', s = 16)
+                
+            elif task == 'moving_circle':
+                ax.scatter(task_df[task_df['rewarded']]['trial_start_time'], task_df[task_df['rewarded']]['wait_time'], 
+                        marker='o', color=self.colors['rewarded'], s = 20)
+                ax.scatter(task_df[task_df['false_alarm']]['trial_start_time'], task_df[task_df['false_alarm']]['wait_time'], 
+                        marker='x', color=self.colors['false_alarm'], s = 12)
+                ax.scatter(task_df[task_df['lapse']]['trial_start_time'], task_df[task_df['lapse']]['wait_time'], 
+                        marker='o', color=self.colors['lapse'], s = 16)
+
+        # Adding a secondary y-axis for reaction times
+        sec_ax = ax.twinx()
+        ax.scatter(df[df['false_alarm']]['trial_start_time'], df[df['false_alarm']]['reaction_time'], marker = 'x', 
+                    color=self.colors['wait_time'], label='false alarm reaction time', s = 12)
+        sec_ax.spines['right'].set_visible(False)
+        sec_ax.set_ylabel('Actual wait time on FA')
+        sec_ax.yaxis.label.set_color(self.colors['wait_time'])
+        sec_ax.set_yticks([])  # Removes the y-axis ticks
+        sec_ax.set_yticklabels([])  # Removes the y-axis tick labels
+
+        ax.set_xlabel('Seconds')
+        ax.set_ylabel('Target wait time')
+        ax.set_title('Outcomes for wait times throughout session')
+    
+    
+    
     def plot_wait_time_vs_starttime(self, ax, df):
         df = df.copy()
         # Plot for visual stimuli where contrast is not NaN
@@ -348,6 +358,55 @@ class Plotter():
         ax.set_ylabel('Target wait time')
         ax.set_title('Outcomes for wait times throughout session')
         
+    
+    def plot_wait_time_vs_contrast_alltasks(self, ax, df):
+        # Loop through each unique task and plot for different outcomes
+        df = df.sort_values(by='task')
+
+
+        # Loop through each unique task and plot accordingly
+        for task in df['task'].unique():
+            task_df = df[df['task'] == task]
+
+            if task == 'gratings':
+                rewarded_df = task_df[task_df['rewarded'] == True]
+                ax.scatter(rewarded_df['contrast'], rewarded_df['wait_time'], marker='s', facecolor = 'none', color=self.colors['rewarded'], linewidth = 1.5, alpha = 0.8)
+                false_alarm_df = task_df[task_df['false_alarm'] == True]
+                ax.scatter(false_alarm_df['contrast'], false_alarm_df['wait_time'], marker='x', color=self.colors['false_alarm'], alpha = 0.25)
+                catch_lapse_df = task_df[task_df['catch_lapse'] == True]
+                ax.scatter(catch_lapse_df['contrast'], catch_lapse_df['wait_time'], marker='s', facecolor = 'none', color=self.colors['catch_lapse'], linewidth = 1.5)
+                lapse_df = task_df[task_df['lapse'] == True]
+                ax.scatter(lapse_df['contrast'], lapse_df['wait_time'], marker='x', color=self.colors['lapse'])
+
+            elif task == 'estim':
+                task_df['abs_estim_amp'] = np.abs(task_df['estim_amp'])
+                rewarded_df = task_df[task_df['rewarded'] == True]
+                ax.scatter(rewarded_df['abs_estim_amp'], rewarded_df['wait_time'], marker='s', facecolor = 'none', color=self.colors['rewarded'], linewidth = 1.5)
+                false_alarm_df = task_df[task_df['false_alarm'] == True]
+                ax.scatter(false_alarm_df['abs_estim_amp'], false_alarm_df['wait_time'], marker='x', color=self.colors['false_alarm'])
+                lapse_df = task_df[task_df['lapse'] == True]
+                ax.scatter(lapse_df['abs_estim_amp'], lapse_df['wait_time'], marker='x', color=self.colors['lapse'])
+                ax.set_xlabel('Amplitude (uA)')
+            
+            elif task == 'moving_circle':    
+                rewarded_df = task_df[task_df['rewarded'] == True]
+                sizes = rewarded_df['circle_radius']*0.15 # Scaling factor for visibility
+                ax.scatter(rewarded_df['circle_contrast']*100 + 4, rewarded_df['wait_time'], marker='o', facecolor = 'none', 
+                        color=self.colors['rewarded'], linewidth = 1.5, s = sizes, alpha = 0.8)
+                
+                false_alarm_df = task_df[task_df['false_alarm'] == True]
+                sizes = false_alarm_df['circle_radius']*0.15 # Scaling factor for visibility
+                ax.scatter(false_alarm_df['circle_contrast']*100+4, false_alarm_df['wait_time'], marker='x', facecolor = 'none', 
+                        color=self.colors['false_alarm'], linewidth = 1.5, s = sizes, alpha = 0.25)
+                
+                lapse_df = task_df[task_df['lapse'] == True]
+                sizes = lapse_df['circle_radius']*0.15 # Scaling factor for visibility
+                ax.scatter(lapse_df['circle_contrast']*100 + 4, lapse_df['wait_time'], marker='x', color=self.colors['lapse'], alpha = 0.5)
+
+                ax.set_xlabel('Contrast (%)')
+
+        ax.set_ylabel('Wait Time')
+    
     def plot_wait_time_vs_contrast(self, ax, df, stimuli_type = 'contrast'):
         # Replace zero contrast with a small non-zero value, such as 1
         df = df.copy()
@@ -398,7 +457,42 @@ class Plotter():
         ax.set_title(f'Wait Time by {stimuli_type}')
         #ax.legend()
 
+    def plot_reaction_times_alltasks(self, ax, df):
+        # Sort the dataframe by task
+        df = df[df['rewarded'] == True]
+        df = df.sort_values(by='task')
 
+        # Loop through each unique task and plot accordingly
+        for task in df['task'].unique():
+            task_df = df[df['task'] == task]
+
+            if task == 'gratings':
+                ax.scatter(task_df['contrast'], task_df['reaction_time'], marker='s', facecolor = 'none', 
+                        color='lightskyblue', label='Gratings', linewidth = 1)
+                ax.set_xlabel('Contrast (%)')
+
+            elif task == 'estim':
+                # Positive amplitudes
+                pos_df = task_df[task_df['estim_amp'] >= 0]
+                ax.scatter(pos_df['estim_amp']+2, pos_df['reaction_time'], marker='^', color=self.colors['lapse'], label='Electrical Stimulation (Positive)')
+                # Negative amplitudes
+                neg_df = task_df[task_df['estim_amp'] < 0]
+                ax.scatter(neg_df['estim_amp']-2, neg_df['reaction_time'], marker='v', color='lightcyan', label='Electrical Stimulation (Negative)')
+                ax.set_xlabel('Amplitude (uA)')
+            
+            elif task == 'moving_circle':
+                # Convert contrast to gratings contrasts 
+                sizes = task_df['circle_radius']*0.15 # Scaling factor for visibility
+                ax.scatter(task_df['circle_contrast']*100+4, task_df['reaction_time'], s=sizes, marker='o', 
+                        facecolors = 'none', color='lightsteelblue', label='Moving Circle (size ~ radius)',
+                        linewidth = 1)
+                ax.set_xlabel('Contrast (%)')
+
+        ax.set_ylabel('Reaction Time (s)')
+        ax.set_title('Reaction Times by Task')
+        ax.legend()
+    
+    
     def plot_reaction_time_vs_starttime(self, ax, df):
         df = df.copy()
         df = df.dropna(subset=['contrast'])
@@ -445,60 +539,63 @@ class Plotter():
 
     def plot_recent_trial_outcomes(self, ax, df, flip_axes=False):
         if df.shape[0] > 5:
-            last_trials = df.tail(5)  # get the last 5 trials
+            last_trials = df.tail(5)  # Get the last 5 trials
 
-            # Define outcomes and corresponding colors and markers
-            outcomes = ['rewarded', 'false_alarm', 'lapse', 'catch_lapse']
-            colors = {'rewarded': self.colors['rewarded'], 'false_alarm': self.colors['false_alarm'], 
-                    'lapse': self.colors['lapse'], 'catch_lapse': self.colors['catch_lapse']}
-            # Adjusting markers based on trial type (visual or estim)
-            markers = {'rewarded': {'visual': 'o', 'estim': '*'}, 
-                    'false_alarm': {'visual': 'X', 'estim': 'P'}, 
-                    'lapse': {'visual': 'X', 'estim': 'P'}, 
-                    'catch_lapse': {'visual': 'o', 'estim': '*'}}
+            # Define marker styles based on the task
+            task_markers = {
+                'gratings': 's',       # Circle
+                'estim': '^',          # Triangle up
+                'moving_circle': 'o',  # Square
+            }
+
             if flip_axes:
                 marker_size = 250
             else:
                 marker_size = 500  # Large marker size for visibility
 
-            # The coordinate position, depending on orientation
-            fixed_value = 1  
-
-            # Iterate over each of the last trials and plot according to outcome
-            for i, trial in enumerate(last_trials.itertuples(index=True), 1):
-                trial_type = 'estim' if np.isnan(getattr(trial, 'contrast')) else 'visual'
-                for outcome in outcomes:
-                    if getattr(trial, outcome):  # If the outcome is True for this trial
-                        current_marker = markers[outcome][trial_type]
-                        if flip_axes:
-                            # Plot vertically
-                            ax.scatter(fixed_value, i, s=marker_size, color=colors[outcome], 
-                                    label=f"{outcome} ({trial_type})", marker=current_marker)
-                        else:
-                            # Plot horizontally
-                            ax.scatter(i, fixed_value, s=marker_size, color=colors[outcome], 
-                                    label=f"{outcome} ({trial_type})", marker=current_marker)
-
-            # Simplify the plot
-            if flip_axes:
-                ax.set_xticks([])  # Hide x-axis as it's not meaningful for horizontal
-                ax.set_yticks(range(1, 6))  # Adjust y-ticks for horizontal orientation
-                ax.set_yticklabels(range(5, 0, -1))  # Most recent trial labeled "1" on the top
-                ax.set_ylabel('Trials from Most Recent')
-            else:
-                ax.set_yticks([])  # Hide y-axis as it's not meaningful for vertical
-                ax.set_xticks(range(1, 6))  # Adjust x-ticks for vertical orientation
-                ax.set_xticklabels(range(5, 0, -1))  # Most recent trial labeled "1" on the right
-                ax.set_xlabel('Trials from Most Recent')
+            # Plot the outcomes of the last 5 trials with task-specific markers
+            
+            counter = 0
+            for i, row in last_trials.iterrows():
+                
+                marker = task_markers.get(row['task'], 'o')  # Default to circle if task is not defined            
+                if flip_axes:
+                    if row['rewarded']:
+                        ax.scatter(1, 5 - counter, marker=marker, color=self.colors['rewarded'], s=marker_size, label=f'Rewarded-{row.task}')
+                    elif row['false_alarm']:
+                        ax.scatter(1, 5 - counter, marker=marker, color=self.colors['false_alarm'], s=marker_size, label=f'False Alarm-{row.task}')
+                    elif row['lapse']:
+                        ax.scatter(1, 5 - counter, marker=marker, color=self.colors['lapse'], s=marker_size, label=f'Lapse-{row.task}')
+                    elif row['catch_lapse']:
+                        ax.scatter(1, 5 - counter, marker=marker, color=self.colors['catch_lapse'], s=marker_size, label=f'Catch Lapse-{row.task}')
+                    ax.set_xticks([])  # Hide x-axis as it's not meaningful for horizontal
+                    ax.set_yticks(range(1, 6))  # Adjust y-ticks for horizontal orientation
+                    ax.set_yticklabels(range(5, 0, -1))  # Most recent trial labeled "1" on the top
+                    ax.set_ylabel('Trials from Most Recent')
+                else:
+                    if row['rewarded']:
+                        ax.scatter(5 - counter, 1, marker=marker, color=self.colors['rewarded'], s=marker_size, label='Rewarded')
+                    elif row['false_alarm']:
+                        ax.scatter(5 - counter, 1, marker=marker, color=self.colors['false_alarm'], s=marker_size, label='False Alarm')
+                    elif row['lapse']:
+                        ax.scatter(5 - counter, 1, marker=marker, color=self.colors['lapse'], s=marker_size, label='Lapse')
+                    elif row['catch_lapse']:
+                        ax.scatter(5 - counter, 1, marker=marker, color=self.colors['catch_lapse'], s=marker_size, label='Catch Lapse')
+                    
+                    ax.set_yticks([])  # Hide y-axis as it's not meaningful for vertical
+                    ax.set_xticks(range(1, 6))  # Adjust x-ticks for vertical orientation
+                    ax.set_xticklabels(range(5, 0, -1))  # Most recent trial labeled "1" on the right
+                    ax.set_xlabel('Trials from Most Recent')
+                counter+=1
 
             # To avoid duplicate labels in the legend
             handles, labels = ax.get_legend_handles_labels()
             unique_labels = dict(zip(labels, handles))
-            #ax.legend(unique_labels.values(), unique_labels.keys(), loc='upper left' if flip_axes else 'upper right')
+
             if flip_axes:
-                ax.legend(unique_labels.values(), unique_labels.keys(), loc='upper left', bbox_to_anchor=(1.05, 1), markerscale = 0.3)
+                ax.legend(unique_labels.values(), unique_labels.keys(), loc='lower left', markerscale=0.3)
             else:
-                ax.legend(unique_labels.values(), unique_labels.keys(), loc='upper right', markerscale = 0.3)
+                ax.legend(unique_labels.values(), unique_labels.keys(), loc='upper right', markerscale=0.3)
 
             ax.set_title('Outcomes of the Last 5 Trials')
             
