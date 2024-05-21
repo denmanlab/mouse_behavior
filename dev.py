@@ -114,20 +114,20 @@ def on_draw():
     imgui.begin("Settings", True, flags=imgui.WINDOW_ALWAYS_AUTO_RESIZE)
 
     # Slider for Minimum Wait Time
-    changed_min_wait, new_min_wait = imgui.slider_int("Minimum Wait Time", 
-                                                      params.min_wait_time, 1, 30, 
-                                                    "%.0f", imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
+    changed_min_wait, new_min_wait = imgui.slider_float("Minimum Wait Time", 
+                                                        params.min_wait_time, 1.0, 30.0, 
+                                                        "%.1f", imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
     if changed_min_wait:
         params.min_wait_time = new_min_wait
-        print(f'Minimum Wait Time: {params.min_wait_time}')
+        print(f'Minimum Wait Time: {params.min_wait_time:.1f}')
 
     # Slider for Maximum Wait Time
-    changed_max_wait, new_max_wait = imgui.slider_int("Maximum Wait Time", 
-                                                      params.max_wait_time, 1, 30, 
-                                                      "%.0f", imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
+    changed_max_wait, new_max_wait = imgui.slider_float("Maximum Wait Time", 
+                                                        params.max_wait_time, 1.0, 30.0, 
+                                                        "%.1f", imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
     if changed_max_wait:
         params.max_wait_time = new_max_wait
-        print(f'Maximum Wait Time: {params.max_wait_time}')
+        print(f'Maximum Wait Time: {params.max_wait_time:.1f}')
 
     # Slider for Quiet Period (ITI with no licking)
     changed_quiet_period, new_quiet_period = imgui.slider_float("Quiet Period (ITI w no licking)", 
@@ -345,6 +345,17 @@ def on_draw():
         print(f'AutoReward: {"On" if params.autoreward else "Off"}')
 
     imgui.pop_style_color(1)
+    
+    # timing distribution button
+    imgui.same_line()
+    if imgui.button(f"Timing Dist: {'Uniform' if params.timing_distribution == 'uniform' else 'Exponential'}"):
+        # Toggle between 'uniform' and 'exponential'
+        if params.timing_distribution == 'uniform':
+            params.timing_distribution = 'exponential'
+        else:
+            params.timing_distribution = 'uniform'
+        
+        print(f'Wait time distribution: {params.timing_distribution.capitalize()}')
 
     imgui.end()
     imgui.render()
@@ -455,34 +466,39 @@ def unpause(params):
 def setup_trial(params):
     if params.trial_running:  # Check if a trial is already running
         return  # Exit if a trial is in progress
-    
-    current_time = timer.time
-    if (current_time - params.last_lick_time) >= params.quiet_period and not params.timeout:
-        #select_stimuli(params, stimuli)
-        select_stimuli2(params, stimuli)
-        params.wait_time = uniform(params.min_wait_time, params.max_wait_time)
-        # params.wait_time = params.min_wait_time + np.random.exponential(params.max_wait_time / 10.)
-        params.trial_running = True
-        params.stimulus_visible = False
-        params.lick_detected_during_trial = False
-        params.trial_outcome = None  # Reset trial outcome
+    if params.df_updated: #makes sure the df has been saved before starting a new trial
         
-        params.trial_start_time = timer.time
-        print(f"Trial Started, wait time is {params.wait_time} seconds.")
-        
-        #electrify spout
-        if params.FA_penalty == 12: # hack so penalty can be motor down time (0-10), none (11), or shock spout (12)
-            electrify_spout(params,task_io)
-        
-        # Unschedule to avoid overlaps
-        unschedule(start_trial)
-        unschedule(end_trial)
-        
-        schedule_once(start_trial, params.wait_time, params)
-    else:
-        # Reschedule the setup_trial check after a short delay, ensuring no overlap
-        unschedule(setup_trial)  # Unschedule previous setup_trial calls
-        schedule_once(lambda dt: setup_trial(params), 0.5)
+        current_time = timer.time
+        if (current_time - params.last_lick_time) >= params.quiet_period and not params.timeout:
+            params.df_updated = False #reset this so next setup trial doesn't occur until df saved
+            #select_stimuli(params, stimuli)
+            select_stimuli2(params, stimuli)
+            if params.timing_distribution == 'uniform':
+                params.wait_time = uniform(params.min_wait_time, params.max_wait_time)
+            else:
+                params.wait_time = params.min_wait_time + np.random.exponential(params.max_wait_time / 10.)
+            params.trial_running = True
+            params.stimulus_visible = False
+            params.lick_detected_during_trial = False
+            params.trial_outcome = None  # Reset trial outcome
+            
+            #electrify spout
+            if params.FA_penalty == 12: # hack so penalty can be motor down time (0-10), none (11), or shock spout (12)
+                electrify_spout(params,task_io)
+            
+            # Unschedule to avoid overlaps
+            unschedule(start_trial)
+            unschedule(end_trial)
+            
+            params.trial_start_time = timer.time
+            params.stim_on_time = params.trial_start_time + params.wait_time #this is reset to the actual stim_on_time later if the mouse doens't FA before
+            schedule_once(start_trial, params.wait_time, params)
+            print(f"Trial Started, wait time is {params.wait_time} seconds.")
+            
+        else:
+            # Reschedule the setup_trial check after a short delay, ensuring no overlap
+            unschedule(setup_trial)  # Unschedule previous setup_trial calls
+            schedule_once(lambda dt: setup_trial(params), 0.5)
 
 def select_stimuli(Params, Stimuli): 
     ## select a contrast
@@ -542,6 +558,10 @@ def select_stimuli2(Params, Stimuli):
     if task == 'gratings':
         contrast = choice(Params.contrasts)
         Params.stim_contrast = int(contrast)
+        if contrast == '0':
+            params.catch = True
+        else:
+            params.catch = False
         Stimuli.update_contrast_image(contrast)
         
         # set other task variables to none
@@ -563,6 +583,7 @@ def select_stimuli2(Params, Stimuli):
         Params.circle_radius = None
         Params.circle_startx = None
         Params.circle_starty = None
+        Params.catch = False
         
     elif task == 'moving_circle':
         ''' contrast and radius size are chosen randomly in the moving circle class... 
@@ -576,7 +597,8 @@ def select_stimuli2(Params, Stimuli):
         
         #set other task variables to none
         Params.stim_contrast = None
-        Params.estim_amp = None 
+        Params.estim_amp = None
+        Params.catch = False
             
 def start_trial(dt, params):
     if params.FA_penalty == 12: # hack so penalty can be motor down time (0-10), none (11), or shock spout (12)
@@ -594,8 +616,7 @@ def start_trial(dt, params):
         stimulator.flush_serial_port() # flushes the port so it runs better
         stimulator.send_command_and_read_response('1001 set trigger one')  # trigger the stim!!!
         params.estim_times_software.append(timer.time)
-        params.estim_params = stimulator.get_params() #track the parameters from the stimulator
-        print(params.estim_params)
+
     
     if params.autoreward == True and params.stim_contrast != 0:
         schedule_once(scheduled_reward, 0.1, params, task_io)
@@ -616,7 +637,7 @@ def process_lick(params): #processes lick events detected by read_lickometer for
         elif params.stimulus_visible and params.trial_outcome == None:
             if params.catch: # that is stim contrast is off 
                 task_io.buzz(volume = params.buzzer_volume) # buzz for an auditory learning cue
-                params.trial_outcome = "False Alarm"
+                params.trial_outcome = "Catch False Alarm"
                 params.rewarded_lick_time = timer.time # rewarded_lick_time is bad variable name for this but its fine. i don't want to create new variable
                 print("Catch: Lick detected after 0 Contrast.")
 
@@ -645,7 +666,9 @@ def end_trial(dt, params):
     
     # Reset trial parameters for the next trial
     params.trial_running = False
-    
+    if params.task == 'estim':
+        params.estim_params = stimulator.get_params() #track the parameters from the stimulator
+        print(params.estim_params)
     # check if mouse needs a timeout!!! i.e., FA streak greater than FA penalty threshold
     if params.FA_penalty_check():
         print(f"FA streak of {params.FA_streak} greater than FA penalty of {params.FA_penalty}. Timeout!")
@@ -667,11 +690,12 @@ def end_trial(dt, params):
     ## this has caused some lag and I don't want it to mess with timing so trying to add threading
     #params.update_df()
     #plotter.update_plots(params.trials_df)
-    pyglet.clock.schedule_once(update_df_and_plots, 0.1)
+    pyglet.clock.schedule_once(update_df_and_plots, 0.05)
     
 def update_df_and_plots(dt):
     params.update_df()
     plotter.update_plots(params.trials_df)
+    params.df_updated = True
 def set_timeout_false(dt): 
     params.timeout = False
 
@@ -690,11 +714,11 @@ def read_lickometer(dt, params):
 
 def read_estim_digital_copy(dt, params):
     estimometer = task_io.estim_pin.read() 
-    if estimometer and timer.time - params.last_estim_dig > 0.5: 
+    if estimometer and timer.time - params.last_estim_dig > 1: 
         current_time = timer.time
         params.estim_times_digital.append(current_time)
         params.last_estim_dig = current_time
-    
+        print(f'estim digital event detected:{params.last_estim_dig}')
 def electrify_spout(params, task_io):
     if not params.spout_charged:
         task_io.spout_charge_pin.write(1) # set the arduino pin connected to the relay high
@@ -737,8 +761,8 @@ def move_spout(params, task_io):
 def run_experiment():
     setup_trial(params)
     # Schedule this function to be called every tick of the event loop
-    
-    pyglet.clock.schedule_interval(read_lickometer, 1/1000, params) 
+    pyglet.clock.schedule_interval(read_lickometer, 1/1000, params)
+    pyglet.clock.schedule_interval(read_estim_digital_copy, 1/1000, params) 
     pyglet.clock.schedule(timer.update)
     task_io.move_spout(90) # move spout back up to lickable position
     pyglet.app.run()

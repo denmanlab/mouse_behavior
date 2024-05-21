@@ -5,7 +5,7 @@ class ArduinoController:
     def __init__(self, port, sol1_pin=2, sol2_pin=3, 
                  servo_pin=6,
                  ir_pin = 10,
-                 estim_pin = 12,
+                 estim_pin = 7,
                  spout_charge_pin = 5):
         self.board = Arduino(port)
         it = util.Iterator(self.board)

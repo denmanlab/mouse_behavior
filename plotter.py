@@ -306,7 +306,7 @@ class Plotter():
 
         # Adding a secondary y-axis for reaction times
         sec_ax = ax.twinx()
-        ax.scatter(df[df['false_alarm']]['trial_start_time'], df[df['false_alarm']]['reaction_time'], marker = 'x', 
+        ax.scatter(df[df['false_alarm']]['trial_start_time'], df[df['false_alarm']]['FA_reaction_time'], marker = 'x', 
                     color=self.colors['wait_time'], label='false alarm reaction time', s = 12)
         sec_ax.spines['right'].set_visible(False)
         sec_ax.set_ylabel('Actual wait time on FA')
@@ -346,7 +346,7 @@ class Plotter():
 
         # Adding a secondary y-axis for reaction times
         sec_ax = ax.twinx()
-        ax.plot(df[df['false_alarm']]['trial_start_time'], df[df['false_alarm']]['reaction_time'], 'X', 
+        ax.plot(df[df['false_alarm']]['trial_start_time'], df[df['false_alarm']]['FA_reaction_time'], 'X', 
                     color=self.colors['wait_time'], label='false alarm reaction time', markersize=6)
         sec_ax.spines['right'].set_visible(False)
         sec_ax.set_ylabel('Actual wait time on FA')
@@ -363,7 +363,6 @@ class Plotter():
         # Loop through each unique task and plot for different outcomes
         df = df.sort_values(by='task')
 
-
         # Loop through each unique task and plot accordingly
         for task in df['task'].unique():
             task_df = df[df['task'] == task]
@@ -379,9 +378,9 @@ class Plotter():
                 ax.scatter(lapse_df['contrast'], lapse_df['wait_time'], marker='x', color=self.colors['lapse'])
 
             elif task == 'estim':
-                task_df['abs_estim_amp'] = np.abs(task_df['estim_amp'])
+                task_df = task_df.assign(abs_estim_amp=lambda x: np.abs(x['estim_amp']))
                 rewarded_df = task_df[task_df['rewarded'] == True]
-                ax.scatter(rewarded_df['abs_estim_amp'], rewarded_df['wait_time'], marker='s', facecolor = 'none', color=self.colors['rewarded'], linewidth = 1.5)
+                ax.scatter(rewarded_df['abs_estim_amp'], rewarded_df['wait_time'], marker='^', facecolor = 'none', color=self.colors['rewarded'], linewidth = 1.5)
                 false_alarm_df = task_df[task_df['false_alarm'] == True]
                 ax.scatter(false_alarm_df['abs_estim_amp'], false_alarm_df['wait_time'], marker='x', color=self.colors['false_alarm'])
                 lapse_df = task_df[task_df['lapse'] == True]
@@ -473,11 +472,11 @@ class Plotter():
 
             elif task == 'estim':
                 # Positive amplitudes
-                pos_df = task_df[task_df['estim_amp'] >= 0]
-                ax.scatter(pos_df['estim_amp']+2, pos_df['reaction_time'], marker='^', color=self.colors['lapse'], label='Electrical Stimulation (Positive)')
+                pos_df = task_df.query('estim_amp > 0')
+                ax.scatter(pos_df['estim_amp']+2, pos_df['reaction_time'], marker='^', color='lightcyan', label='Electrical Stimulation (Positive)')
                 # Negative amplitudes
-                neg_df = task_df[task_df['estim_amp'] < 0]
-                ax.scatter(neg_df['estim_amp']-2, neg_df['reaction_time'], marker='v', color='lightcyan', label='Electrical Stimulation (Negative)')
+                neg_df = task_df.query('estim_amp < 0')
+                ax.scatter(np.abs(neg_df['estim_amp']-2), neg_df['reaction_time'], marker='v', color='lightcyan', label='Electrical Stimulation (Negative)')
                 ax.set_xlabel('Amplitude (uA)')
             
             elif task == 'moving_circle':
@@ -569,8 +568,9 @@ class Plotter():
                     elif row['catch_lapse']:
                         ax.scatter(1, 5 - counter, marker=marker, color=self.colors['catch_lapse'], s=marker_size, label=f'Catch Lapse-{row.task}')
                     ax.set_xticks([])  # Hide x-axis as it's not meaningful for horizontal
-                    ax.set_yticks(range(1, 6))  # Adjust y-ticks for horizontal orientation
-                    ax.set_yticklabels(range(5, 0, -1))  # Most recent trial labeled "1" on the top
+                    ax.set_yticks(range(1,6))  # Adjust y-ticks for horizontal orientation
+                    ax.set_yticklabels(range(0,5,1))  # Most recent trial labeled "1" on the top
+                    ax.invert_yaxis()
                     ax.set_ylabel('Trials from Most Recent')
                 else:
                     if row['rewarded']:
@@ -584,7 +584,8 @@ class Plotter():
                     
                     ax.set_yticks([])  # Hide y-axis as it's not meaningful for vertical
                     ax.set_xticks(range(1, 6))  # Adjust x-ticks for vertical orientation
-                    ax.set_xticklabels(range(5, 0, -1))  # Most recent trial labeled "1" on the right
+                    ax.set_xticklabels(range(0, 5,1))  # Most recent trial labeled "1" on the right
+                    ax.invert_xaxis()
                     ax.set_xlabel('Trials from Most Recent')
                 counter+=1
 

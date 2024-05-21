@@ -71,14 +71,12 @@ class Stimuli():
         contrast is the string key for the image
         '''
         if contrast == '0':
-            self.params.catch = True
             #game sprite
             self.sprite.visible = False
             self.sprite.image = self.grating_images[contrast]
             #monitor sprite
             self.sprite2.image = self.grating_images[contrast]
         else: #contrast not zero
-            self.params.catch = False
             self.sprite.visible = True
             self.sprite.image = self.grating_images[contrast]
             self.sprite2.image = self.grating_images[contrast]

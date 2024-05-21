@@ -69,6 +69,7 @@ class Params:
         
         self.PAUSED = False
         self.stimulator_connected = False
+        self.df_updated = True #starts true and then is updated to false during setup trial... updated to true when df is updated before next setup trial
 
         self.spout_charged  =False
         
@@ -84,7 +85,9 @@ class Params:
         self.timeout_duration = 15 # duration of the timeout
         self.autoreward = False
         self.shaping = False
+        self.timing_distribution = 'uniform'
         self.buzzer_volume = 0.05
+        
         
         self.contrasts = [] #a list of the static contrasts that can be chosen
         self.estim_amps = [] # a list of the stim amplitudes that can be chosen
@@ -107,7 +110,9 @@ class Params:
                                                 'outcome','false_alarm','rewarded','lapse', 'catch_lapse',
                                                 'quiet_period',
                                                 'wait_time', 
-                                                'trial_start_time','stim_on_time', 'reaction_time',
+                                                'trial_start_time','stim_on_time', 
+                                                'FA_reaction_time', 'reaction_time',
+                                                'rewarded_lick_time',
                                                 'autoreward', 'shaping', 'reward_volume', 'buzzer_volume'
                                                 ])
     
@@ -149,10 +154,9 @@ class Params:
             print(f"Failed to load previous parameters: {e}")
     
     def update_df(self): # called after every trial to update the DF
-        self.false_alarm = self.trial_outcome == 'False Alarm'
+        self.false_alarm = self.trial_outcome in ['False Alarm', 'Catch False Alarm']
         self.rewarded = self.trial_outcome == 'Reward'
         self.lapse = self.trial_outcome == 'Lapse'
-        
         if self.catch and self.lapse:
             self.catch_lapse = True
             self.lapse = False
@@ -161,10 +165,13 @@ class Params:
 
         if self.rewarded:
             reaction_time = self.rewarded_lick_time - self.stim_on_time
+            FA_reaction_time = None
         elif self.catch and self.rewarded_lick_time is not None: # if the FA happened after stim-on time
             reaction_time = self.rewarded_lick_time - self.stim_on_time #rewarded lick time is bad name, lick was not rewarded but oh well. 
+            FA_reaction_time = None
         else:
-            reaction_time = self.FA_lick_time - self.trial_start_time
+            FA_reaction_time = self.FA_lick_time - self.trial_start_time
+            reaction_time = None
         
         new_index = len(self.trials_df)
         # Add a new row at the end of the DataFrame
@@ -190,7 +197,9 @@ class Params:
             'quiet_period': self.quiet_period,
             'wait_time': self.wait_time,
             'trial_start_time': self.trial_start_time,
-            'reaction_time': reaction_time,
+            'reaction_time': np.nan if reaction_time is None else reaction_time, 
+            'FA_reaction_time': np.nan if FA_reaction_time is None else FA_reaction_time,
+            'rewarded_lick_time': np.nan if self.rewarded_lick_time is None else self.rewarded_lick_time,
             'stim_on_time': self.stim_on_time,
             'autoreward': self.autoreward,
             'shaping': self.shaping,
