@@ -428,6 +428,11 @@ def on_key_press(symbol, modifiers):
             print('Paused: all events unscheduled')
     elif symbol == pyglet.window.key.M:
         manual_stim(params)
+        
+    elif symbol == pyglet.window.key.I:
+        if params.df_updated == False:
+            params.df_updated = True
+        setup_trial(params)
             
 
 ## task functions 
@@ -466,39 +471,38 @@ def unpause(params):
 def setup_trial(params):
     if params.trial_running:  # Check if a trial is already running
         return  # Exit if a trial is in progress
-    if params.df_updated: #makes sure the df has been saved before starting a new trial
-        
-        current_time = timer.time
-        if (current_time - params.last_lick_time) >= params.quiet_period and not params.timeout:
-            params.df_updated = False #reset this so next setup trial doesn't occur until df saved
-            #select_stimuli(params, stimuli)
-            select_stimuli2(params, stimuli)
-            if params.timing_distribution == 'uniform':
-                params.wait_time = uniform(params.min_wait_time, params.max_wait_time)
-            else:
-                params.wait_time = params.min_wait_time + np.random.exponential(params.max_wait_time / 10.)
-            params.trial_running = True
-            params.stimulus_visible = False
-            params.lick_detected_during_trial = False
-            params.trial_outcome = None  # Reset trial outcome
-            
-            #electrify spout
-            if params.FA_penalty == 12: # hack so penalty can be motor down time (0-10), none (11), or shock spout (12)
-                electrify_spout(params,task_io)
-            
-            # Unschedule to avoid overlaps
-            unschedule(start_trial)
-            unschedule(end_trial)
-            
-            params.trial_start_time = timer.time
-            params.stim_on_time = params.trial_start_time + params.wait_time #this is reset to the actual stim_on_time later if the mouse doens't FA before
-            schedule_once(start_trial, params.wait_time, params)
-            print(f"Trial Started, wait time is {params.wait_time} seconds.")
-            
+
+    current_time = timer.time
+    if (current_time - params.last_lick_time) >= params.quiet_period and not params.timeout and params.df_updated:
+        params.df_updated = False #reset this so next setup trial doesn't occur until df saved
+        #select_stimuli(params, stimuli)
+        select_stimuli2(params, stimuli)
+        if params.timing_distribution == 'uniform':
+            params.wait_time = uniform(params.min_wait_time, params.max_wait_time)
         else:
-            # Reschedule the setup_trial check after a short delay, ensuring no overlap
-            unschedule(setup_trial)  # Unschedule previous setup_trial calls
-            schedule_once(lambda dt: setup_trial(params), 0.5)
+            params.wait_time = params.min_wait_time + np.random.exponential(params.max_wait_time / 10.)
+        params.trial_running = True
+        params.stimulus_visible = False
+        params.lick_detected_during_trial = False
+        params.trial_outcome = None  # Reset trial outcome
+        
+        #electrify spout
+        if params.FA_penalty == 12: # hack so penalty can be motor down time (0-10), none (11), or shock spout (12)
+            electrify_spout(params,task_io)
+        
+        # Unschedule to avoid overlaps
+        unschedule(start_trial)
+        unschedule(end_trial)
+        
+        params.trial_start_time = timer.time
+        params.stim_on_time = params.trial_start_time + params.wait_time #this is reset to the actual stim_on_time later if the mouse doens't FA before
+        schedule_once(start_trial, params.wait_time, params)
+        print(f"Trial Started, wait time is {params.wait_time} seconds.")
+        
+    else:
+        # Reschedule the setup_trial check after a short delay, ensuring no overlap
+        unschedule(setup_trial)  # Unschedule previous setup_trial calls
+        schedule_once(lambda dt: setup_trial(params), 0.5)
 
 def select_stimuli(Params, Stimuli): 
     ## select a contrast
@@ -731,6 +735,7 @@ def deelectrify_spout(params, task_io):
         params.spout_charged = False
         print('spout decharged for rewards')
         
+        
 
         
 
@@ -791,7 +796,7 @@ timer = Timer()
 timer.start()
 
 #set up arduino
-task_io = ArduinoController('COM7')
+task_io = ArduinoController('COM5')
 task_io.move_spout(270) # this moves spout down bc sometimes when turning on the spout moves and hits the mouse. 
 
 
