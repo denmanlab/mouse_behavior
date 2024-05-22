@@ -213,7 +213,12 @@ class Plotter():
         self.plot_reaction_times_alltasks(ax4, df)
         
         #recent outcomes
-        if (df['task'] == 'moving_circle').any():
+        if (df['task'] == 'estim').any():
+            ax5 = plt.subplot(gs[4:6, 2])
+            self.plot_estim_and_catch_trial_hitrates(ax5, df)
+            ax5_5 = plt.subplot(gs[4:6, 3])
+            self.plot_recent_trial_outcomes(ax5_5, df, flip_axes = True)
+        elif (df['task'] == 'moving_circle').any():
             ax5 = plt.subplot(gs[4:6, 2])
             self.plot_moving_circles(ax5, df)
             ax5_5 = plt.subplot(gs[4:6, 3])
@@ -622,7 +627,50 @@ class Plotter():
         ax.set_title('')
 
 
-
+    def plot_estim_and_catch_trial_hitrates(self, ax, df):
+        """
+        Plot the normalized 'rewarded' and 'Catch False Alarm' (Catch FA) rates for 'estim' and 'catch' trials,
+        including text annotations for the ratio of 'rewarded' to 'total' trials.
+        
+        Args:
+        ax (matplotlib.axes.Axes): The axes object where the plot will be drawn.
+        df (pandas.DataFrame): The dataframe containing trial data.
+        """
+        # Filtering for 'estim' task and summarizing counts
+        estim_session = df[df['task'] == 'estim']
+        grouped_estim = estim_session.groupby('estim_amp').agg({
+            'rewarded': 'sum',  # Counting True values for rewarded
+            'lapse': 'sum',
+        }).reset_index()
+        grouped_estim['total'] = grouped_estim['rewarded'] + grouped_estim['lapse']
+        grouped_estim['norm_rewarded'] = grouped_estim['rewarded'] / grouped_estim['total']
+        
+        # Filtering for 'catch' sessions and counting Catch FA outcomes
+        catch_session = df[df['contrast'] == 0]
+        catch_FAs = (catch_session['outcome'] == 'Catch False Alarm').sum()
+        total_catch = catch_FAs + (catch_session['catch_lapse'] == True).sum()
+        
+        norm_catch_FA = catch_FAs / total_catch
+        
+        # Plotting 'estim' trials for rewarded
+        bars = ax.bar(grouped_estim['estim_amp'], grouped_estim['norm_rewarded'], label='Rewarded', color='green', width=2)
+        
+        # Adding 'catch' trial results at an amplitude of 0 for visual separation
+        ax.bar(0, norm_catch_FA, label='Catch False Alarm', color='orange', width=2)
+        
+        # Annotating counts on the bars as 'rewarded/total'
+        for rect, rewarded, total in zip(bars, grouped_estim['rewarded'], grouped_estim['total']):
+            ax.text(rect.get_x() + rect.get_width() / 2, rect.get_height(), f'{rewarded}/{total}', ha='center', va='baseline')
+        
+        # Annotating Catch FA count at amplitude 0
+        ax.text(0, norm_catch_FA, f'{catch_FAs}/{total_catch}', ha='center', va='center', color='white')
+        
+        # Setting chart titles and labels
+        ax.set_title('estim and catch hit rates')
+        ax.set_xlabel('Estimation Amplitude (µA)')
+        ax.set_xticks([-100, -50, -25,-5, 0, 5, 25, 50, 100])
+        ax.set_ylabel('Proportion of Trials')
+        ax.legend()
             
     def plot_d_prime(self, df, ax, stimuli = 'contrast'):
         # Aggregate trial outcomes by contrast
