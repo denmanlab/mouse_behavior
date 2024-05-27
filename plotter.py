@@ -652,7 +652,7 @@ class Plotter():
         # Filtering for 'catch' sessions and counting Catch FA outcomes
         catch_session = df[df['contrast'] == 0]
         catch_FAs = (catch_session['outcome'] == 'Catch False Alarm').sum()
-        total_catch = len(catch_session)
+        total_catch = catch_FAs + (catch_session['catch_lapse']).sum()
         
         # Avoid division by zero in normalization of Catch FA rates
         norm_catch_FA = catch_FAs / total_catch if total_catch > 0 else 0
