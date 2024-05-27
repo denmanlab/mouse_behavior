@@ -10,7 +10,7 @@ import threading
 from random import randint, choice, uniform
 
 
-
+import time
 import pandas as pd
 import numpy as np
 import datetime, os, glob, sys
@@ -167,12 +167,18 @@ def on_draw():
         params.FA_penalty = new_FA_penalty
         print(f'FA Penalty {params.FA_penalty}')
     
+    
     changed_timeout_dur, new_timeout_dur = imgui.slider_int('Timeout Duration', params.timeout_duration, 0,30,'%.0f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
     if changed_timeout_dur:
         
         params.timeout_duration = new_timeout_dur
         print(f'Timeout Duration {params.timeout_duration}')
 
+    changed_shock_duration, new_shock_duration = imgui.slider_float('FA shock duration', params.shock_duration, 0.00,1.00,'%.2f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
+    if changed_shock_duration:
+        # new_shock_duration = round(new_shock_duration / 0.05) * 0.05
+        params.shock_duration = new_shock_duration
+        print(f'Shock Duration {params.shock_duration}')
     
     changed_buzzer_volume, new_buzzer_volume_raw = imgui.slider_float('Buzzer Volume', params.buzzer_volume, 0.00, 1.00, '%.2f', imgui.SLIDER_FLAGS_ALWAYS_CLAMP)
 
@@ -488,7 +494,7 @@ def setup_trial(params):
         
         #electrify spout
         if params.FA_penalty == 12: # hack so penalty can be motor down time (0-10), none (11), or shock spout (12)
-            electrify_spout(params,task_io)
+            pass #electrify_spout(params,task_io)
         
         # Unschedule to avoid overlaps
         unschedule(start_trial)
@@ -606,7 +612,7 @@ def select_stimuli2(Params, Stimuli):
             
 def start_trial(dt, params):
     if params.FA_penalty == 12: # hack so penalty can be motor down time (0-10), none (11), or shock spout (12)
-        deelectrify_spout(params,task_io) # unelectrify spout
+        pass #deelectrify_spout(params,task_io) # unelectrify spout
     
     params.stimulus_visible = True
     params.stim_on_time = timer.time #pyglet.clock.get_default().time()
@@ -636,6 +642,10 @@ def process_lick(params): #processes lick events detected by read_lickometer for
             params.FA_lick_time = timer.time
             unschedule(start_trial)
             print("False Alarm (FA): Lick detected before stimulus.")
+            if params.FA_penalty == 12: # hack so penalty can be motor down time (0-10), none (11), or shock spout (12)
+                unschedule(give_shock)
+                schedule_once(give_shock, 0.0, params, task_io)
+                
             unschedule(end_trial)
             schedule_once(end_trial,0,params)   
         elif params.stimulus_visible and params.trial_outcome == None:
@@ -727,13 +737,16 @@ def electrify_spout(params, task_io):
     if not params.spout_charged:
         task_io.spout_charge_pin.write(1) # set the arduino pin connected to the relay high
         params.spout_charged = True
-        print('spout charged for FAs')
-        
+        print('spout charged for FAs')   
 def deelectrify_spout(params, task_io):
     if params.spout_charged:
         task_io.spout_charge_pin.write(0) # set the arduino pin connected to the relay low
         params.spout_charged = False
         print('spout decharged for rewards')
+def give_shock(dt, params,task_io):
+    electrify_spout(params,task_io)
+    time.sleep(params.shock_duration)
+    deelectrify_spout(params, task_io)
         
         
 

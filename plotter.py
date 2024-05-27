@@ -223,7 +223,6 @@ class Plotter():
             self.plot_moving_circles(ax5, df)
             ax5_5 = plt.subplot(gs[4:6, 3])
             self.plot_recent_trial_outcomes(ax5_5, df, flip_axes = True)
-
         else:
             ax5 = plt.subplot(gs[4:6, 2:4])
             self.plot_recent_trial_outcomes(ax5, df)
@@ -494,6 +493,7 @@ class Plotter():
 
         ax.set_ylabel('Reaction Time (s)')
         ax.set_title('Reaction Times by Task')
+        ax.set_ylim(bottom=0)
         ax.legend()
     
     
@@ -608,23 +608,24 @@ class Plotter():
     def plot_moving_circles(self, ax, df):
         # Filter the dataframe for 'moving_circle' tasks
         moving_circle_df = df.loc[(df['task'] == 'moving_circle') & (df['false_alarm'] == False)]
+        if len(moving_circle_df) > 1:
+            # Determine color based on whether the trial was rewarded
+            colors = np.where(moving_circle_df['rewarded'], self.colors['rewarded'], self.colors['lapse']) 
 
-        # Determine color based on whether the trial was rewarded
-        colors = np.where(moving_circle_df['rewarded'], self.colors['rewarded'], self.colors['lapse']) 
+            contrast = moving_circle_df['circle_contrast']
+            alpha_values = 0.2 + 0.8 * ((contrast - 0.08) / (1 - 0.08))
 
-        contrast = moving_circle_df['circle_contrast']
-        alpha_values = 0.2 + 0.8 * ((contrast - 0.08) / (1 - 0.08))
+            ax.scatter(moving_circle_df['circle_startx'], moving_circle_df['circle_starty'],
+                                s=moving_circle_df['circle_radius'], color=colors, alpha=alpha_values, label='Start Positions')
 
-        ax.scatter(moving_circle_df['circle_startx'], moving_circle_df['circle_starty'],
-                            s=moving_circle_df['circle_radius'], color=colors, alpha=alpha_values, label='Start Positions')
+            # Set limits, labels, and title for the axes
+            ax.set_ylim(0, 1420)
+            ax.set_xlim(0, 2160)
+            ax.invert_yaxis()  # Flips the Y-axis
+            ax.set_xlabel('Start Pos X')
+            ax.set_ylabel('Start Pos Y')
+            ax.set_title('')
 
-        # Set limits, labels, and title for the axes
-        ax.set_ylim(0, 1420)
-        ax.set_xlim(0, 2160)
-        ax.invert_yaxis()  # Flips the Y-axis
-        ax.set_xlabel('Start Pos X')
-        ax.set_ylabel('Start Pos Y')
-        ax.set_title('')
 
 
     def plot_estim_and_catch_trial_hitrates(self, ax, df):
@@ -636,6 +637,7 @@ class Plotter():
         ax (matplotlib.axes.Axes): The axes object where the plot will be drawn.
         df (pandas.DataFrame): The dataframe containing trial data.
         """
+
         # Filtering for 'estim' task and summarizing counts
         estim_session = df[df['task'] == 'estim']
         grouped_estim = estim_session.groupby('estim_amp').agg({
@@ -643,35 +645,40 @@ class Plotter():
             'lapse': 'sum',
         }).reset_index()
         grouped_estim['total'] = grouped_estim['rewarded'] + grouped_estim['lapse']
-        grouped_estim['norm_rewarded'] = grouped_estim['rewarded'] / grouped_estim['total']
+        
+        # Avoid division by zero
+        grouped_estim['norm_rewarded'] = np.where(grouped_estim['total'] > 0, grouped_estim['rewarded'] / grouped_estim['total'], 0)
         
         # Filtering for 'catch' sessions and counting Catch FA outcomes
         catch_session = df[df['contrast'] == 0]
         catch_FAs = (catch_session['outcome'] == 'Catch False Alarm').sum()
-        total_catch = catch_FAs + (catch_session['catch_lapse'] == True).sum()
+        total_catch = len(catch_session)
         
-        norm_catch_FA = catch_FAs / total_catch
+        # Avoid division by zero in normalization of Catch FA rates
+        norm_catch_FA = catch_FAs / total_catch if total_catch > 0 else 0
         
         # Plotting 'estim' trials for rewarded
-        bars = ax.bar(grouped_estim['estim_amp'], grouped_estim['norm_rewarded'], label='Rewarded', color='green', width=2)
+        bars = ax.bar(grouped_estim['estim_amp'], grouped_estim['norm_rewarded'], label='Rewarded', color=self.colors['rewarded'], width=2)
         
-        # Adding 'catch' trial results at an amplitude of 0 for visual separation
-        ax.bar(0, norm_catch_FA, label='Catch False Alarm', color='orange', width=2)
+        # Adding 'catch' trial results 
+        ax.bar(0, norm_catch_FA, label='Catch False Alarm', color=self.colors['false_alarm'], width=2)
         
         # Annotating counts on the bars as 'rewarded/total'
         for rect, rewarded, total in zip(bars, grouped_estim['rewarded'], grouped_estim['total']):
-            ax.text(rect.get_x() + rect.get_width() / 2, rect.get_height(), f'{rewarded}/{total}', ha='center', va='baseline')
+            if rewarded > 0 and np.isfinite(rect.get_height()) and np.isfinite(rect.get_x() + rect.get_width() / 2):
+                ax.text(rect.get_x() + rect.get_width() / 2, rect.get_height(), f'{rewarded}/{total}', ha='center', va='center')
         
         # Annotating Catch FA count at amplitude 0
-        ax.text(0, norm_catch_FA, f'{catch_FAs}/{total_catch}', ha='center', va='center', color='white')
+        if total_catch > 0 and np.isfinite(norm_catch_FA):
+            ax.text(0, norm_catch_FA, f'{catch_FAs}/{total_catch}', ha='center', va='center', color='white')
         
         # Setting chart titles and labels
-        ax.set_title('estim and catch hit rates')
-        ax.set_xlabel('Estimation Amplitude (µA)')
-        ax.set_xticks([-100, -50, -25,-5, 0, 5, 25, 50, 100])
+        ax.set_title('Estim and Catch Hit Rates')
+        ax.set_xlabel('Estim Amplitude (µA)')
+        ax.set_xticks([-100, -50, -25, -5, 0, 5, 25, 50, 100])
         ax.set_ylabel('Proportion of Trials')
-        ax.legend()
-            
+
+
     def plot_d_prime(self, df, ax, stimuli = 'contrast'):
         # Aggregate trial outcomes by contrast
         grouped = df.groupby('stimuli').agg(
