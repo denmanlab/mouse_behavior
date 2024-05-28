@@ -435,7 +435,7 @@ def on_key_press(symbol, modifiers):
     elif symbol == pyglet.window.key.M:
         manual_stim(params)
         
-    elif symbol == pyglet.window.key.I:
+    elif symbol == pyglet.window.key.I: # if somehow it gets out of the game loop, this schedules a new trial
         if params.df_updated == False:
             params.df_updated = True
         setup_trial(params)
@@ -743,6 +743,7 @@ def deelectrify_spout(params, task_io):
         task_io.spout_charge_pin.write(0) # set the arduino pin connected to the relay low
         params.spout_charged = False
         print('spout decharged for rewards')
+
 def give_shock(dt, params,task_io):
     electrify_spout(params,task_io)
     time.sleep(params.shock_duration)
