@@ -54,40 +54,47 @@ class Plotter():
     def summary_plots(self, df):
         plt.style.use(['dark_background', 'seaborn-v0_8-talk'])
         # set up figure and gridspec
-        f = plt.figure(figsize=(15, 20))
-        gs = gridspec.GridSpec(8, 3, height_ratios=[2, 2, 3, 0.1, 2, 2, 2.5, 2.5], width_ratios=[5, 2, 2])
+        f = plt.figure(figsize=(15, 25))
+        gs = gridspec.GridSpec(9, 3, height_ratios=[6, 2, 2, 6, 0.3, 2, 2, 2.5, 2.5], width_ratios=[5, 2, 2])
         # add main title and subheadings
         mouse_name = self.params['mouse']
         session_directory = self.params['start_time_string']
+        
+        
         f.suptitle(f'Mouse: {mouse_name}', fontsize=28)
         f.text(0.5, 0.94, f'Session Perf: {session_directory}', ha='center',
                 fontsize=22, weight = 'bold', style = 'italic')
-        f.text(0.5, 0.525, 'Performance Over Last 10 Sessions', ha='center', fontsize=28,
-               weight = 'bold', style = 'italic')
         
-        f.text(0.05, 0.54, '----Rewarded--', ha = 'left', color = self.colors['rewarded'], 
-               fontsize = 20, weight = 'bold')
-        f.text(0.05, 0.52, '----False Alarm--', ha = 'left', color = self.colors['false_alarm'], 
-               fontsize = 20, weight = 'bold')
-        f.text(0.95, 0.54, '----Lapse--', ha = 'right', color = self.colors['lapse'], 
-               fontsize = 20, weight = 'bold')
-        f.text(0.95, 0.52, '----Catch Lapse--', ha = 'right', color = self.colors['catch_lapse'], 
-               fontsize = 20, weight = 'bold')
+
+        f.text(0.5, 0.425, 'Performance Over Last 10 Sessions', ha='center', fontsize=28,
+                weight = 'bold', style = 'italic')
+        
+        f.text(0.05, 0.44, '----Rewarded--', ha = 'left', color = self.colors['rewarded'], 
+                fontsize = 20, weight = 'bold')
+        f.text(0.05, 0.42, '----False Alarm--', ha = 'left', color = self.colors['false_alarm'], 
+                fontsize = 20, weight = 'bold')
+        f.text(0.95, 0.44, '----Lapse--', ha = 'right', color = self.colors['lapse'], 
+                fontsize = 20, weight = 'bold')
+        f.text(0.95, 0.42, '----Catch Lapse--', ha = 'right', color = self.colors['catch_lapse'], 
+                fontsize = 20, weight = 'bold')
+
 
 
         ## daily plots! 5 plots (2 left column, 3 right column)
         # First column plots
-        ax0 = plt.subplot(gs[0:2, 0])  # This plot spans the first two rows of the first column
+        ax0 = plt.subplot(gs[0, 0])  # This plot spans the first two rows of the first column 
         try:
-            self.plot_outcomes_by_contrast(ax0, df)
-        except:
-            print('outcomes by contrast did not work')
-        
-        ax1 = plt.subplot(gs[2, 0])  
-        try:
-            self.plot_wait_time_vs_starttime(ax1, df)
+            self.plot_wait_time_vs_starttime_alltasks(ax0, df)
         except:
             print('wait times not working')
+        
+        ax1 = plt.subplot(gs[1:3, 0])  
+        try:
+            self.plot_reaction_times_alltasks(ax1, df)
+            ax1.legend_.remove()
+        except:
+            print('reaction time no work')
+
         # Second column plots,       
         ax2 = plt.subplot(gs[0, 1:3])
         try:
@@ -98,20 +105,34 @@ class Plotter():
         ax3 = plt.subplot(gs[1:3, 1]) 
         try: 
             self.plot_cumulative_count(ax3, df)
-            ax3.legend_.remove()
         except:
             print('cumulative counts did not work')
         ax4 = plt.subplot(gs[1:3, 2])  
         try:
-            self.plot_reaction_time_vs_starttime(ax4, df)
+            self.plot_wait_time_vs_contrast_alltasks(ax4, df)
         except:
-            print('reaction time no work')
+            print('wait_time_vs_contrast_alltasks did not work')
         
-
+        ax5 = plt.subplot(gs[3, 0]) # contrast curves for day
+        try:
+            self.plot_outcomes_by_contrast(ax5, df)
+        except:
+            print('outcomes by contrast did not work')
         
+        ax6 = plt.subplot(gs[3, 1]) # estim and catch lapse for day
+        try:
+            self.plot_estim_and_catch_trial_hitrates(ax6, df)
+        except:
+            print('unable to plot estim and catch trial hitrates')
+        ax7 = plt.subplot(gs[3, 2]) # spatial circle for day 
+        try:
+            self.plot_moving_circles(ax7, df)
+        except: 
+            print('moving circles did not plot')
+            
         ## Summary of recent sessions (currently 10)
-        combined_df = self.load_and_combine_dataframes()
-        sum0 = plt.subplot(gs[4:6,0])
+        combined_df = self.load_and_combine_dataframes(base_path = r"C:\Users\jordan\Desktop\c104")
+        sum0 = plt.subplot(gs[5:7,0])
         try:
             self.plot_detection_curve_percent_correct(sum0, combined_df)
             sum0.set_title('Averaged detection curve')
@@ -119,15 +140,21 @@ class Plotter():
         except:
             print('detection curve did not plot')
         
-        sum05 = plt.subplot(gs[6:8,0])
-        try:
-            self.plot_percent_correct_heatmap(sum05, combined_df)
-        except:
-            print('percent correct by day did not owkr')
-        sum05.set_title('% Correct Heatmap by day')
+        sum05 = plt.subplot(gs[7:9,0])
+        if (combined_df['task'] == 'estim').any():
+            try:
+                self.plot_estim_and_catch_trial_hitrates(sum05, combined_df)
+            except:
+                print('percent correct by day did not owkr')
+            sum05.set_title('% Cumulative Estim detection')
+        else:
+            try:
+                self.plot_percent_correct_heatmap(sum05, combined_df)
+            except:
+                print('percent correct heatmap did not work')
         
         
-        sum1 = plt.subplot(gs[4, 1:3])
+        sum1 = plt.subplot(gs[5, 1:3])
         try: 
             self.plot_cumulative_counts(combined_df, sum1, 'rewarded')
             self.plot_cumulative_counts(combined_df, sum1, 'false_alarm')
@@ -136,35 +163,35 @@ class Plotter():
             print('Oops, Cumulative Outcomes by Day plot didnt work.')
         sum1.set_title('Cumulative Outcomes by Day')
         
-        sum2 = plt.subplot(gs[5, 1])
+        sum2 = plt.subplot(gs[6, 1])
         try:
             self.plot_cumulative_counts(combined_df, sum2, 'false_alarm/rewarded')
         except:
             print('false alarm rate didnt work')
         sum2.set_title('False Alarm Rate')
 
-        sum2half = plt.subplot(gs[5,2])
+        sum2half = plt.subplot(gs[6,2])
         try:
             self.plot_mean_wait_time_by_day(sum2half, combined_df)
         except:
             print('mean wait time by day didnt work')
         sum2half.set_title('Mean Wait Time by Day')
 
-        sum4 = plt.subplot(gs[6:8, 1])
+        sum4 = plt.subplot(gs[7:9, 1])
         try:
             self.plot_proportions_by_wait_time(sum4, combined_df, num_bins = 10)
         except:
             print('no high contrast waittime proportions')
         sum4.set_title('High contrast waittime props')
 
-        sum5 = plt.subplot(gs[6, 2])
+        sum5 = plt.subplot(gs[7, 2])
         try:
             self.plot_weight_by_day(sum5, combined_df)
         except:
             print('weight by day didnt plot')
         sum5.set_title('Weight by Day')
 
-        sum6 = plt.subplot(gs[7, 2])
+        sum6 = plt.subplot(gs[8, 2])
         try:
             self.plot_water_delivered_by_day(sum6, combined_df)
         except:
@@ -177,8 +204,7 @@ class Plotter():
         
         folder = self.params['directory']
         save_str = os.path.join(folder, 'summary_plot.png')
-        plt.savefig(save_str)
-    
+        #plt.savefig(save_str)
 
 
     def update_plots(self, df):
@@ -389,7 +415,7 @@ class Plotter():
                 ax.scatter(false_alarm_df['abs_estim_amp'], false_alarm_df['wait_time'], marker='x', color=self.colors['false_alarm'])
                 lapse_df = task_df[task_df['lapse'] == True]
                 ax.scatter(lapse_df['abs_estim_amp'], lapse_df['wait_time'], marker='x', color=self.colors['lapse'])
-                ax.set_xlabel('Amplitude (uA)')
+                ax.set_xlabel('Contrast/Amplitude (uA)')
             
             elif task == 'moving_circle':    
                 rewarded_df = task_df[task_df['rewarded'] == True]
