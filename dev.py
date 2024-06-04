@@ -410,7 +410,8 @@ def on_key_press(symbol, modifiers):
         #np.save(os.path.join(params.directory,'spout_timestamps.npy'),params.spout_timestamps)
         print('closing devices')
         task_io.board.exit()
-        stimulator.close_connection()
+        if params.stimulator_connected:
+            stimulator.close_connection()
         pyglet.app.exit()
 
 
@@ -781,7 +782,8 @@ def run_experiment():
     setup_trial(params)
     # Schedule this function to be called every tick of the event loop
     pyglet.clock.schedule_interval(read_lickometer, 1/1000, params)
-    pyglet.clock.schedule_interval(read_estim_digital_copy, 1/1000, params) 
+    if params.stimulator_connected:
+        pyglet.clock.schedule_interval(read_estim_digital_copy, 1/1000, params) 
     pyglet.clock.schedule(timer.update)
     task_io.move_spout(90) # move spout back up to lickable position
     pyglet.app.run()
@@ -792,11 +794,11 @@ def run_experiment():
 params = Params(mouse=mouse_name, weight=mouse_weight) #these variables are set at the top of the script w an input so they occur before drawn windows
 
 # create stimulator class
-try:
-    stimulator = AM4100(com_port = 'COM4')
-    params.stimulator_connected = True
-except: 
+stimulator = AM4100(com_port = 'COM4')
+if stimulator.serial_port == None:
     params.stimulator_connected = False
+else:
+    params.stimulator_connected = True
 
 plotter = Plotter(params) # plotting functions and tools for performance window
 stimuli = Stimuli(params, window.width, window.height, 

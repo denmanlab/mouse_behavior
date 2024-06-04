@@ -131,7 +131,7 @@ class Plotter():
             print('moving circles did not plot')
             
         ## Summary of recent sessions (currently 10)
-        combined_df = self.load_and_combine_dataframes(base_path = r"C:\Users\jordan\Desktop\c104")
+        combined_df = self.load_and_combine_dataframes()
         sum0 = plt.subplot(gs[5:7,0])
         try:
             self.plot_detection_curve_percent_correct(sum0, combined_df)
@@ -204,7 +204,7 @@ class Plotter():
         
         folder = self.params['directory']
         save_str = os.path.join(folder, 'summary_plot.png')
-        #plt.savefig(save_str)
+        plt.savefig(save_str)
 
 
     def update_plots(self, df):

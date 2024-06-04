@@ -87,7 +87,7 @@ class Params:
         self.shaping = False
         self.timing_distribution = 'uniform'
         self.buzzer_volume = 0.05
-        self.shock_duration = 0.3
+        self.shock_duration = 0.05
         
         
         self.contrasts = [] #a list of the static contrasts that can be chosen
