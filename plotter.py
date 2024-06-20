@@ -66,7 +66,7 @@ class Plotter():
                 fontsize=22, weight = 'bold', style = 'italic')
         
 
-        f.text(0.5, 0.425, 'Performance Over Last 10 Sessions', ha='center', fontsize=28,
+        f.text(0.5, 0.425, 'Performance Over Last 20 Sessions', ha='center', fontsize=28,
                 weight = 'bold', style = 'italic')
         
         f.text(0.05, 0.44, '----Rewarded--', ha = 'left', color = self.colors['rewarded'], 
@@ -1074,8 +1074,8 @@ class Plotter():
         # List directories and sort them by parsing each as a pendulum instance
         sorted_dir_names = sorted(next(os.walk(base_path))[1], key=lambda x: pendulum.from_format(x, 'YYYY-MM-DD_HH-mm-ss'))
 
-        # Take the 10 most recent directories or if less than 10 all the most recents. 
-        recent_dirs = sorted_dir_names[-10:] if len(sorted_dir_names) >= 10 else sorted_dir_names
+        # Take the 20 most recent directories or if less than 20 all the most recents. 
+        recent_dirs = sorted_dir_names[-20:] if len(sorted_dir_names) >= 10 else sorted_dir_names
 
         all_data = []  # List to store individual session dataframes
         params_list = []  # List to store params from each session
