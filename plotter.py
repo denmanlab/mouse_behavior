@@ -24,17 +24,20 @@ class Plotter():
         self.window_height = 800
 
         # Load the progress image and create the sprite
-        self.progress_image = pyglet.resource.image('progress_tmp.png')
-        self.sprite_progress = pyglet.sprite.Sprite(self.progress_image)
+        try:
+            self.progress_image = pyglet.resource.image('progress_tmp.png')
+            self.sprite_progress = pyglet.sprite.Sprite(self.progress_image)
 
-        # Set the anchor points to the center of the image
-        self.sprite_progress.anchor_x = self.sprite_progress.width // 2
-        self.sprite_progress.anchor_y = self.sprite_progress.height // 2
+            # Set the anchor points to the center of the image
+            self.sprite_progress.anchor_x = self.sprite_progress.width // 2
+            self.sprite_progress.anchor_y = self.sprite_progress.height // 2
 
-        # Calculate the sprite's position to center it in the window
-        self.sprite_progress.x = 10
-        self.sprite_progress.y = 10
-        self.sprite_progress.scale = 0.8
+            # Calculate the sprite's position to center it in the window
+            self.sprite_progress.x = 10
+            self.sprite_progress.y = 10
+            self.sprite_progress.scale = 0.8
+        except:
+            print('could not lot progress image, usually only an issue for back-up plotting')
 
         try:
             self.directory =  self.params.directory
@@ -51,7 +54,7 @@ class Plotter():
             
         plt.style.use(['dark_background', 'seaborn-v0_8-paper'])
     
-    def summary_plots(self, df):
+    def summary_plots(self, df, base_path = None):
         plt.style.use(['dark_background', 'seaborn-v0_8-talk'])
         # set up figure and gridspec
         f = plt.figure(figsize=(15, 25))
@@ -131,7 +134,7 @@ class Plotter():
             print('moving circles did not plot')
             
         ## Summary of recent sessions (currently 10)
-        combined_df = self.load_and_combine_dataframes()
+        combined_df = self.load_and_combine_dataframes(base_path = base_path)
         sum0 = plt.subplot(gs[5:7,0])
         try:
             self.plot_detection_curve_percent_correct(sum0, combined_df)
