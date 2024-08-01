@@ -17,7 +17,7 @@ class Circle:
         self.speed = 0.5
         self.vx = random.choice([-self.speed, self.speed])  # x vel #do choice
         self.vy = random.choice([-self.speed, self.speed])  # y vel do choice
-        self.contrasts = [0.08, 0.32, 0.64, 1.0]  # contrasts
+        self.contrasts = [0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 0.8, 1.0]  # contrasts
         self.set_contrast_color()
         self.start_angle = random.uniform(0, 2 * 3.14159)  # random start angle in radians
         self.lcircle = shapes.Sector(self.x, self.y, self.radius, 

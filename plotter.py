@@ -31,13 +31,12 @@ class Plotter():
             # Set the anchor points to the center of the image
             self.sprite_progress.anchor_x = self.sprite_progress.width // 2
             self.sprite_progress.anchor_y = self.sprite_progress.height // 2
-
             # Calculate the sprite's position to center it in the window
             self.sprite_progress.x = 10
             self.sprite_progress.y = 10
             self.sprite_progress.scale = 0.8
-        except:
-            print('could not lot progress image, usually only an issue for back-up plotting')
+        except: 
+            print('Could not Load previous progress image')
 
         try:
             self.directory =  self.params.directory
@@ -694,7 +693,7 @@ class Plotter():
         
         # Annotating counts on the bars as 'rewarded/total'
         for rect, rewarded, total in zip(bars, grouped_estim['rewarded'], grouped_estim['total']):
-            if rewarded > 0 and np.isfinite(rect.get_height()) and np.isfinite(rect.get_x() + rect.get_width() / 2):
+            if total > 0 and np.isfinite(rect.get_height()) and np.isfinite(rect.get_x() + rect.get_width() / 2):
                 ax.text(rect.get_x() + rect.get_width() / 2, rect.get_height(), f'{rewarded}/{total}', ha='center', va='center')
         
         # Annotating Catch FA count at amplitude 0
@@ -741,7 +740,7 @@ class Plotter():
 
         # filter contrasts with more than 10 trials
         total_trials = grouped.sum(axis=1)
-        grouped_filtered = grouped[total_trials > 3]
+        grouped_filtered = grouped[total_trials > 1]
 
         # calculate proportions for the filtered DataFrame
         for col in ['rewarded', 'false_alarm', 'lapse', 'catch_lapse']:
@@ -1103,6 +1102,7 @@ class Plotter():
             #check if params is a string, if so convert to a dictionary
             if isinstance(params, str):
                 params = json.loads(params)
+            #print(f'directory tracking for errors: {dir_name}')
             weight = float(params.get('weight', np.nan))
             df['weight'] = weight 
 

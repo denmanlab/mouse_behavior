@@ -192,29 +192,11 @@ def on_draw():
 
     
     #####BUTTONS
-    
-    # Determine button colors based on whether the stimuli are included
-    gratings_button_color = (0, 0.5, 0) if params.GRATINGS_INCLUDED else (0.5, 0, 0)  # Green if included, red if not
-    
-    # Push style color for gratings stimuli toggle button
-    imgui.push_style_color(imgui.COLOR_BUTTON, *gratings_button_color)
-    if imgui.button("Toggle gratings Stimuli"):
-        
-        params.GRATINGS_INCLUDED = not params.GRATINGS_INCLUDED  # Toggle the boolean
-        if params.GRATINGS_INCLUDED:
-            params.contrasts = list(stimuli.grating_images.keys())  # Reset the list to all keys
-            print("Gratings stimuli enabled")
-        else:
-            params.contrasts = []  # Clear the list
-            print("Gratings stimuli disabled")
-    imgui.pop_style_color(1)  # Pop the button color style to return to default
-
-    
     button_width = 30  
     button_height = 20  
 
     #### gratings contrast buttons
-    if params.GRATINGS_INCLUDED:
+    if params.GRATINGS_INCLUDED or params.MOVING_CIRCLE_INCLUDED:
         first_button = True
         for contrast in stimuli.grating_images.keys():
             button_label = f"{contrast}"
@@ -239,6 +221,27 @@ def on_draw():
 
             # Pop the button color style to return to default
             imgui.pop_style_color(1)
+    
+    
+    
+    # Determine button colors based on whether the stimuli are included
+    gratings_button_color = (0, 0.5, 0) if params.GRATINGS_INCLUDED else (0.5, 0, 0)  # Green if included, red if not
+    
+    # Push style color for gratings stimuli toggle button
+    imgui.push_style_color(imgui.COLOR_BUTTON, *gratings_button_color)
+    if imgui.button("Toggle gratings Stimuli"):
+        
+        params.GRATINGS_INCLUDED = not params.GRATINGS_INCLUDED  # Toggle the boolean
+        if params.GRATINGS_INCLUDED:
+            #params.contrasts = list(stimuli.grating_images.keys())  # Reset the list to all keys
+            print("Gratings stimuli enabled")
+        else:
+            #params.contrasts = []  # Clear the list
+            print("Gratings stimuli disabled")
+    imgui.pop_style_color(1)  # Pop the button color style to return to default
+
+    
+
 
     #### estim amplitude buttons
 
@@ -323,6 +326,8 @@ def on_draw():
         
         params.MOVING_CIRCLE_INCLUDED = not params.MOVING_CIRCLE_INCLUDED  # Toggle the boolean
         if params.MOVING_CIRCLE_INCLUDED:
+            stimuli.circle.contrasts = [int(contrast)/100 for contrast in params.contrasts]
+            stimuli.circle.contrasts.pop(0) #remove 0 contrast
             print("Moving Circle stimuli enabled")
         else:
             print("Moving Circle stimuli disabled")
@@ -417,11 +422,11 @@ def on_key_press(symbol, modifiers):
 
     elif symbol == pyglet.window.key.R:
         print('R: up')
-        task_io.move_spout(90) #this is up and lickable
+        task_io.move_spout(160) #this is up and lickable
 
     elif symbol == pyglet.window.key.T:
         print('T: down')
-        task_io.move_spout(270) #this is down and unlickable
+        task_io.move_spout(140) #this is down and unlickable
 
     elif symbol == pyglet.window.key.S:
         print('Solenoid droplet')
@@ -769,12 +774,12 @@ def update_estim_params(AM4100, amp): #for now only going to change amplitude bu
 def move_spout(params, task_io):
     if params.spout_position == 'up': #lickable
         # move spout down
-        task_io.move_spout(270)
+        task_io.move_spout(160)
         params.spout_position = 'down'
         print(f"spout {params.spout_position}")
     else: #unlickable
         # move spout up
-        task_io.move_spout(90)
+        task_io.move_spout(140)
         params.spout_position = 'up'
         print(f"spout {params.spout_position}")
             
@@ -785,7 +790,7 @@ def run_experiment():
     if params.stimulator_connected:
         pyglet.clock.schedule_interval(read_estim_digital_copy, 1/1000, params) 
     pyglet.clock.schedule(timer.update)
-    task_io.move_spout(90) # move spout back up to lickable position
+    task_io.move_spout(160) # move spout back up to lickable position
     pyglet.app.run()
 
 
@@ -794,7 +799,7 @@ def run_experiment():
 params = Params(mouse=mouse_name, weight=mouse_weight) #these variables are set at the top of the script w an input so they occur before drawn windows
 
 # create stimulator class
-stimulator = AM4100(com_port = 'COM4')
+stimulator = AM4100(com_port = 'COM3')
 if stimulator.serial_port == None:
     params.stimulator_connected = False
 else:
@@ -812,8 +817,8 @@ timer = Timer()
 timer.start()
 
 #set up arduino
-task_io = ArduinoController('COM5')
-task_io.move_spout(270) # this moves spout down bc sometimes when turning on the spout moves and hits the mouse. 
+task_io = ArduinoController('COM7')
+task_io.move_spout(140) # this moves spout down bc sometimes when turning on the spout moves and hits the mouse. 
 
 
 
