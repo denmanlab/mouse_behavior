@@ -803,7 +803,7 @@ params = Params(mouse=mouse_name, weight=mouse_weight) #these variables are set 
 
 # load in rig parameters (things that are rig specific like ports and solenoid measurments) 
         # other things like specific digital lines etc can be used as well in the future
-with open('rig_json.json', 'r') as file:
+with open('rig_params.json', 'r') as file:
     rig_params = json.load(file)
 
 # create stimulator class
@@ -825,7 +825,7 @@ timer = Timer()
 timer.start()
 
 #set up arduino
-task_io = ArduinoController(rig_params['arduino_port'])
+task_io = ArduinoController(rig_params['arduino_port'], ir_pin = rig_params['ir_pin'])
 task_io.move_spout(140) # this moves spout down bc sometimes when turning on the spout moves and hits the mouse. 
 
 
