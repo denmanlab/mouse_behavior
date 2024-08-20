@@ -1,0 +1,8 @@
+{
+  "rig_name": "Rig3",
+  "arduino_port": "COM5",
+  "stimulator_port": "COM3",
+  "solenoid": {},
+  "servo_up": 120,
+  "servo_down": 60
+}

@@ -17,7 +17,7 @@ class Circle:
         self.speed = 0.5
         self.vx = random.choice([-self.speed, self.speed])  # x vel #do choice
         self.vy = random.choice([-self.speed, self.speed])  # y vel do choice
-        self.contrasts = [0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 0.8, 1.0]  # contrasts
+        self.contrasts = [0, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 0.8, 1.0]  # contrasts
         self.set_contrast_color()
         self.start_angle = random.uniform(0, 2 * 3.14159)  # random start angle in radians
         self.lcircle = shapes.Sector(self.x, self.y, self.radius, 
@@ -37,6 +37,7 @@ class Circle:
         
         brightness = max(0, min(1, brightness))
         self.color = (int(brightness * 255), int(brightness * 255), int(brightness * 255))
+
         print(self.color)
     
     def draw(self):
@@ -75,6 +76,13 @@ class Circle:
         self.vx = random.choice([-self.speed,self.speed])
         self.vy = random.choice([-self.speed,self.speed])
         self.set_contrast_color()
+        if int(self.contrast) == 0:
+            self.lcircle.visible = False
+            self.rcircle.visible = False
+        else: 
+            self.lcircle.visible = True
+            self.rcircle.visible = True
+        
         self.lcircle.color = self.color
         self.lcircle.x = self.x
         self.lcircle.y = self.y

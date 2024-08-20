@@ -13,7 +13,7 @@ from random import randint, choice, uniform
 import time
 import pandas as pd
 import numpy as np
-import datetime, os, glob, sys
+import datetime, os, glob, sys, json
 
 # import custom classes
 from arduino_controller_jlh import ArduinoController #controls arduino w solenoid, lick spout servo, and buzzer.
@@ -198,6 +198,7 @@ def on_draw():
     #### gratings contrast buttons
     if params.GRATINGS_INCLUDED or params.MOVING_CIRCLE_INCLUDED:
         first_button = True
+        stimuli.circle.contrasts = [int(contrast) / 100 if contrast != '0' else int(contrast) for contrast in params.contrasts]
         for contrast in stimuli.grating_images.keys():
             button_label = f"{contrast}"
             button_color = (0, 0.5, 0) if contrast in params.contrasts else (0.5, 0, 0) # Dark green if IN, dark red if OUT
@@ -218,6 +219,7 @@ def on_draw():
                 else:
                     params.contrasts.append(contrast)
                     print(f'Added {contrast} to contrasts')
+            stimuli.circle.contrasts = [int(contrast) / 100 if contrast != '0' else int(contrast) for contrast in params.contrasts]
 
             # Pop the button color style to return to default
             imgui.pop_style_color(1)
@@ -326,8 +328,8 @@ def on_draw():
         
         params.MOVING_CIRCLE_INCLUDED = not params.MOVING_CIRCLE_INCLUDED  # Toggle the boolean
         if params.MOVING_CIRCLE_INCLUDED:
-            stimuli.circle.contrasts = [int(contrast)/100 for contrast in params.contrasts]
-            stimuli.circle.contrasts.pop(0) #remove 0 contrast
+            stimuli.circle.contrasts = [int(contrast) / 100 if contrast != '0' else int(contrast) for contrast in params.contrasts]
+            
             print("Moving Circle stimuli enabled")
         else:
             print("Moving Circle stimuli disabled")
@@ -614,7 +616,12 @@ def select_stimuli2(Params, Stimuli):
         #set other task variables to none
         Params.stim_contrast = None
         Params.estim_amp = None
-        Params.catch = False
+
+        if Params.circle_contrast == 0:
+            print('yes this catch worked')
+            Params.catch = True
+        else: 
+            Params.catch = False
             
 def start_trial(dt, params):
     if params.FA_penalty == 12: # hack so penalty can be motor down time (0-10), none (11), or shock spout (12)
@@ -754,11 +761,7 @@ def give_shock(dt, params,task_io):
     electrify_spout(params,task_io)
     time.sleep(params.shock_duration)
     deelectrify_spout(params, task_io)
-        
-        
-
-        
-
+             
 def deliver_reward(params, task_io):
     #task_io.s.rotate(params.reward_vol,'dispense') this was for Stepper!
     task_io.droplet(params.reward_vol/1000) #divide by 1000 to convert to seconds
@@ -798,8 +801,13 @@ def run_experiment():
 # Create Params instance with user inputs
 params = Params(mouse=mouse_name, weight=mouse_weight) #these variables are set at the top of the script w an input so they occur before drawn windows
 
+# load in rig parameters (things that are rig specific like ports and solenoid measurments) 
+        # other things like specific digital lines etc can be used as well in the future
+with open('rig_json.json', 'r') as file:
+    rig_params = json.load(file)
+
 # create stimulator class
-stimulator = AM4100(com_port = 'COM3')
+stimulator = AM4100(com_port = rig_params['stimulator_port'])
 if stimulator.serial_port == None:
     params.stimulator_connected = False
 else:
@@ -817,7 +825,7 @@ timer = Timer()
 timer.start()
 
 #set up arduino
-task_io = ArduinoController('COM7')
+task_io = ArduinoController(rig_params['arduino_port'])
 task_io.move_spout(140) # this moves spout down bc sometimes when turning on the spout moves and hits the mouse. 
 
 

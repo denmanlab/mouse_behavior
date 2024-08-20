@@ -13,3 +13,5 @@ __pycache__/plotter.cpython-38.pyc
 __pycache__/params.cpython-38.pyc
 models/progress_tmp.png
 models/progress_tmp.png
+*.pyc
+*.pyc
