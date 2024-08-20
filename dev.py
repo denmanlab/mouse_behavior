@@ -618,8 +618,8 @@ def select_stimuli2(Params, Stimuli):
         Params.estim_amp = None
 
         if Params.circle_contrast == 0:
-            print('yes this catch worked')
             Params.catch = True
+            Params.stim_contrast = 0
         else: 
             Params.catch = False
             

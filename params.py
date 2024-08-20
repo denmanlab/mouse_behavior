@@ -207,6 +207,7 @@ class Params:
             'reward_volume': self.reward_vol,
             'buzzer_volume': self.buzzer_volume
         }
+        
         self.trials_df.to_csv(self.filename)
         save(os.path.join(self.directory,'lick_timestamps.npy'), self.lick_times)
         save(os.path.join(self.directory,'estim_timestamps_software.npy'), self.estim_times_software)
