@@ -54,5 +54,36 @@ class ArduinoController:
         self.activate_solenoid()
         self.board.pass_time(dur)
         self.deactivate_solenoid()
-    
+        
+    def dropletv2(self, dur, on_time = 0.01, off_time = 0.005):
+        """Creates a droplet by activating the solenoid with a specific pattern until the total duration is reached."""
+        # Calculate full cycle time
+        cycle_time = on_time + off_time
+        
+        # Calculate number of full cycles
+        num_cycles = int(dur // cycle_time)
+        
+        # Calculate remaining time after full cycles
+        remaining_time = dur - (num_cycles * cycle_time)
+        
+        for _ in range(num_cycles):
+            self.activate_solenoid()
+            self.board.pass_time(on_time)
+            self.deactivate_solenoid()
+            self.board.pass_time(off_time)
+        
+        # Handle remaining time
+        if remaining_time > on_time:
+            # If remaining time is more than the on_time, turn on solenoid for on_time and then off
+            self.activate_solenoid()
+            self.board.pass_time(on_time)
+            self.deactivate_solenoid()
+            remaining_time -= on_time
+            self.board.pass_time(remaining_time)
+        else:
+            # If remaining time is less than or equal to on_time, turn on solenoid for the remaining time
+            self.activate_solenoid()
+            self.board.pass_time(remaining_time)
+            self.deactivate_solenoid()
+        
 

@@ -32,6 +32,7 @@ class Circle:
 
     def set_contrast_color(self):
         self.contrast = random.choice(self.contrasts)
+        self.int_contrast = int(self.contrast * 100)
         # calculate the color value based on the contrast level
         brightness = self.background_color + (self.contrast * (1 - self.background_color))
         
@@ -76,7 +77,9 @@ class Circle:
         self.vx = random.choice([-self.speed,self.speed])
         self.vy = random.choice([-self.speed,self.speed])
         self.set_contrast_color()
-        if int(self.contrast) == 0:
+        self.int_contrast = int(self.contrast * 100)
+        print(self.int_contrast)
+        if self.int_contrast == 0:
             self.lcircle.visible = False
             self.rcircle.visible = False
         else: 

@@ -732,7 +732,7 @@ def read_lickometer(dt, params):
     #lickometer = task_io.board.digital[10].read() #high is licking, low is not licking
     
     # If a lick is detected and its been at least 0.5s since last lick:
-    if not lickometer and timer.time - params.last_lick_time > 0.5:
+    if not lickometer and timer.time - params.last_lick_time > 0.05:
         current_time = timer.time #pyglet.clock.get_default().time()
         params.lick_times.append(current_time)
         params.last_lick_time = current_time
@@ -764,7 +764,8 @@ def give_shock(dt, params,task_io):
              
 def deliver_reward(params, task_io):
     #task_io.s.rotate(params.reward_vol,'dispense') this was for Stepper!
-    task_io.droplet(params.reward_vol/1000) #divide by 1000 to convert to seconds
+    #task_io.droplet(params.reward_vol/1000) #divide by 1000 to convert to seconds
+    task_io.dropletv2(params.reward_vol/1000, on_time = 0.01, off_time = 0.005) #done in spurts so water stays on bevel #divide by 1000 to convert to seconds
     print(f"solenoid open for {params.reward_vol} ms")
 
 def update_estim_params(AM4100, amp): #for now only going to change amplitude but can change others
